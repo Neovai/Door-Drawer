@@ -1,12 +1,3 @@
-// This script runs the door. The data that it prints out is sensor 1,2,3..., 16 (even though the knob
-// only has 10 and the handle 12. Then the FSR 1,2,3,4 on the back of the handle mount, and finally the
-// position of the potentiometer. The bracketed term is the time since the program has been running.
-// To grasp the data, I would suggest just subtracting the first value with all the others so it starts
-// at zero and adds up from there in milliseconds.
-
-// heavily modified by: Ryan Roberts
-// Date heavily modified: 12/19 - 8/20
-
 // Include the necessary libraries
 #include "math.h" //Includes math library
 #include <Adafruit_MCP3008.h> //Includes library for SPI communications
