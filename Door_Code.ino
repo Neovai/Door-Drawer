@@ -1,23 +1,28 @@
 // This script runs the door. The data that it prints out is sensor 1,2,3..., 16 (even though the knob
-// only has 10 and the handle 12. Then the FSR 1,2,3,4 on the back of the handle mount.
+// only has 10 and the handle 12. Then the FSR 1,2,3,4 on the back of the handle mount, and finally the
+// position of the potentiometer. The bracketed term is the time since the program has been running.
+// To grasp the data, I would suggest just subtracting the first value with all the others so it starts
+// at zero and adds up from there in milliseconds.
 
 // heavily modified by: Ryan Roberts
+// Date heavily modified: 12/19 - 8/20
 
+// Include the necessary libraries
 #include "math.h" //Includes math library
 #include <Adafruit_MCP3008.h> //Includes library for SPI communications
 #include "Adafruit_VL53L0X.h" //library for time of fligh sensor (tof)
 
 //define pins for motor controller
-#define enable_motor_channel 46
-#define motor_channel1  48
-#define motor_channel2  42
+#define enable_motor_channel 6 //pwm pin
+#define motor_channel3  48
+#define motor_channel4  42
 
 // define pins for relay/electromagnet
 #define relay25 35
 #define relay35 33
 #define relay45 44
 
-// define pins for fsr's on handle
+// Initialize FSR and Potentiometer in door frame
 #define pot A0
 #define fsr1 A1
 #define fsr2 A2
@@ -33,27 +38,24 @@ Adafruit_VL53L0X tof = Adafruit_VL53L0X();
 float door_angle;
 
 // Initialize user input variables
-float magnet_input; //controls wich magnets get turned on for variable resistance on opening the door
-float time_input; //controls how long until the door resets itself
-float trial_input; //controls how many times user wants to run a test, doesn't need to be used
-
+float magnet_input;
+float time_input; //was int
+float trial_input; //was int
 char junk = ' ';
 unsigned long time;
 unsigned long stoptime;
 
-//declare motor variable for time to unwind
-const int time_unwind = 4500; // in ms
+//declare motor variable for time
+const int time_unwind = 2000; // in ms
 
 void setup() {
   // Initialize the Serial monitor
   Serial.begin(115200);
 
   // wait until serial port opens for native USB devices
-  while (! Serial) {
-    delay(1);
-  }
+  while (!Serial);
 
-  //if time of flight sensor is not booted correctly, we don't want to run the test on the door
+  //don't run door if TOF is not working
   if (!tof.begin()) {
     Serial.println(F("Failed to boot VL53L0X"));
     while (1);
@@ -64,8 +66,8 @@ void setup() {
   adc2.begin(9, 11, 10, 12);
 
   // initialize motor pins as outputs
-  pinMode(motor_channel1, OUTPUT);
-  pinMode(motor_channel2, OUTPUT);
+  pinMode(motor_channel3, OUTPUT);
+  pinMode(motor_channel4, OUTPUT);
   pinMode(enable_motor_channel, OUTPUT);
 
   // Initializes electromagnet relay pins as outputs
@@ -79,9 +81,102 @@ void setup() {
   digitalWrite(relay45, LOW);
 }
 
+void Reset_Door() {
+  bool did_move = false;
+  int motor_speed = 100; //max speed for the motor
+  Enable_Relays(0); // turns off magnets; makes motor faster
+  analogWrite(enable_motor_channel, motor_speed); //turns motor on
+  digitalWrite(motor_channel3, LOW);// turns motor
+  digitalWrite(motor_channel4, HIGH); // counter clockwise
+  while (true) { // door is open more than 5 degrees
+    VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
+    tof.rangingTest(&measure, false);
+    door_angle = calc_degree(measure.RangeMilliMeter);
+    if (door_angle < 1){
+      break;
+    }
+    did_move = true;
+    delay(100);
+  }
+  if(did_move){
+   digitalWrite(motor_channel3, HIGH); // turns motor
+   digitalWrite(motor_channel4, LOW);// clockwise
+   delay(time_unwind); //run for certain amount of time
+  }
+  analogWrite(enable_motor_channel, 0); // turns motor off
+}
+
+void Enable_Relays(int user_in) {
+  int relay25_val = 0; //for testing purposes
+  if (user_in == 0) {
+    digitalWrite(relay25, relay25_val);
+    delay(100);
+    digitalWrite(relay35, LOW);
+    delay(100);
+    digitalWrite(relay45, LOW);
+    delay(100);
+  }
+  else if (user_in == 1) {
+    digitalWrite(relay25, (relay25_val+1));
+    delay(100);
+    digitalWrite(relay35, LOW);
+    delay(100);
+    digitalWrite(relay45, LOW);
+    delay(100);
+  }
+  else if (user_in == 2) {
+    digitalWrite(relay25, relay25_val);
+    delay(100);
+    digitalWrite(relay35, HIGH);
+    delay(100);
+    digitalWrite(relay45, LOW);
+    delay(100);
+  }
+  else if (user_in == 3) {
+    digitalWrite(relay25, relay25_val);
+    delay(100);
+    digitalWrite(relay35, LOW);
+    delay(100);
+    digitalWrite(relay45, HIGH);
+    delay(100);
+  }
+  else if (user_in == 4) {
+    digitalWrite(relay25, (relay25_val+1));
+    delay(100);
+    digitalWrite(relay35, HIGH);
+    delay(100);
+    digitalWrite(relay45, LOW);
+    delay(100);
+  }
+  else if (user_in == 5) {
+    digitalWrite(relay25, (relay25_val+1));
+    digitalWrite(relay35, LOW);
+    digitalWrite(relay45, HIGH);
+  }
+  else if (user_in == 6) {
+    digitalWrite(relay25, relay25_val);
+    digitalWrite(relay35, HIGH);
+    digitalWrite(relay45, HIGH);
+  }
+  else if (user_in == 7) {
+    digitalWrite(relay25, (relay25_val+1));
+    delay(100);
+    digitalWrite(relay35, HIGH);
+    delay(100);
+    digitalWrite(relay45, HIGH);
+    delay(100);
+  }
+}
+
+float calc_degree(int distance) {
+  float D0 = 289; // value of distance from tof when door is closed
+  float D1 = 418; //value of distance from tof when door is fully open
+  return (distance - D0) / ((D1 - D0) / 90); // 90 is max degree door can open from closed position
+}
+
 void loop() {
-  // Temporary ui for testing the door
- /* Serial.print("Enter desired force rating on a scale of 0 to 7: ");
+  //Temporary Interface for Door testing purposes.
+  Serial.print("Enter desired force rating on a scale of 0 to 7: ");
   while (Serial.available() == 0); {
     magnet_input = Serial.parseFloat();
     Serial.print(magnet_input, 0);
@@ -109,13 +204,12 @@ void loop() {
     while (Serial.available() > 0) {
       junk = Serial.read();
     }
-  }*/
-  
- /* for (int i = 1; i <= trial_input; i++) { // runs number of trials
+  }
+  for (int i = 1; i <= trial_input; i++) { // runs number of trials
     Serial.print("------- trial ");
     Serial.print(i);
     Serial.print(" -------");
-    Serial.print("\n"); */
+    Serial.print("\n");
     Enable_Relays(magnet_input); // changes electromagnets based on input
     time = millis();
     stoptime = time + (time_input * 1000); // converts time_input to seconds
@@ -144,87 +238,23 @@ void loop() {
       if (measure.RangeStatus != 4) {  // phase failures have incorrect data
         door_angle = calc_degree(measure.RangeMilliMeter);
         Serial.print("Angle of Door (deg): "); Serial.print(door_angle); Serial.print(" ");
-        //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //prints raw value of tof sensor, used for testing
+        //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
+      } else {
+        Serial.println(" out of range ");
       }
-      
-      //if door is opened more than 15 degrees, turn off electromagnets
-      //helps keep the electromagnets from overheating
-      if(door_angle > 15) 
+
+      //Turns off electromagnets when not being used.
+      //saves energy and reduces heat from electromagnets.
+      if(door_angle > 15){
         Enable_Relays(0);
-      else
+      }
+      else{
         Enable_Relays(magnet_input);
-      
+      }
+        
       delay(50);
       time = millis();
     }
     Reset_Door(); // automatically close door
-  //}
-}
-
-void Reset_Door() {
-  Enable_Relays(0); // turns off magnets; makes motor faster
-  while (true) { // door is open more than 2 degrees
-    VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
-    tof.rangingTest(&measure, false);
-    door_angle = calc_degree(measure.RangeMilliMeter);
-    digitalWrite(enable_motor_channel, HIGH); //turns motor on
-    digitalWrite(motor_channel1, HIGH);// turns motor
-    digitalWrite(motor_channel2, LOW); // clockwise
-    if (door_angle < 2)
-      break;
-    delay(100);
   }
-  digitalWrite(motor_channel1, LOW); // turns motor
-  digitalWrite(motor_channel2, HIGH);// counter clockwise
-  delay(time_unwind); //run for certain amount of time
-  digitalWrite(enable_motor_channel, LOW); // turns motor off
-}
-
-void Enable_Relays(int user_in) {
-  if (user_in == 0) {
-    digitalWrite(relay25, LOW);
-    digitalWrite(relay35, LOW);
-    digitalWrite(relay45, LOW);
-  }
-  else if (user_in == 1) {
-    digitalWrite(relay25, HIGH);
-    digitalWrite(relay35, LOW);
-    digitalWrite(relay45, LOW);
-  }
-  else if (user_in == 2) {
-    digitalWrite(relay25, LOW);
-    digitalWrite(relay35, HIGH);
-    digitalWrite(relay45, LOW);
-  }
-  else if (user_in == 3) {
-    digitalWrite(relay25, LOW);
-    digitalWrite(relay35, LOW);
-    digitalWrite(relay45, HIGH);
-  }
-  else if (user_in == 4) {
-    digitalWrite(relay25, HIGH);
-    digitalWrite(relay35, HIGH);
-    digitalWrite(relay45, LOW);
-  }
-  else if (user_in == 5) {
-    digitalWrite(relay25, HIGH);
-    digitalWrite(relay35, LOW);
-    digitalWrite(relay45, HIGH);
-  }
-  else if (user_in == 6) {
-    digitalWrite(relay25, LOW);
-    digitalWrite(relay35, HIGH);
-    digitalWrite(relay45, HIGH);
-  }
-  else if (user_in == 7) {
-    digitalWrite(relay25, HIGH);
-    digitalWrite(relay35, HIGH);
-    digitalWrite(relay45, HIGH);
-  }
-}
-
-float calc_degree(int distance) {
-  float D0 = 270; // value of distance from tof when door is closed
-  float D1 = 480; //value of distance from tof when door is fully open
-  return (distance - D0) / ((D1 - D0) / 115); // 115 is max degree door can open from closed position
 }
