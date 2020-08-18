@@ -39,47 +39,14 @@ float door_angle;
 
 // Initialize user input variables
 float magnet_input;
-float time_input; //was int
-float trial_input; //was int
+float time_input;
+float trial_input;
 char junk = ' ';
 unsigned long time;
 unsigned long stoptime;
 
 //declare motor variable for time
 const int time_unwind = 2000; // in ms
-
-void setup() {
-  // Initialize the Serial monitor
-  Serial.begin(115200);
-
-  // wait until serial port opens for native USB devices
-  while (!Serial);
-
-  //don't run door if TOF is not working
-  if (!tof.begin()) {
-    Serial.println(F("Failed to boot VL53L0X"));
-    while (1);
-  }
-
-  // Begins the SPI devices and declares the pins in order of (CLK, MOSI, MISO, CS)
-  adc1.begin(52, 51, 50, 53);
-  adc2.begin(9, 11, 10, 12);
-
-  // initialize motor pins as outputs
-  pinMode(motor_channel3, OUTPUT);
-  pinMode(motor_channel4, OUTPUT);
-  pinMode(enable_motor_channel, OUTPUT);
-
-  // Initializes electromagnet relay pins as outputs
-  pinMode(relay25, OUTPUT);
-  pinMode(relay35, OUTPUT);
-  pinMode(relay45, OUTPUT);
-
-  // Intialize to turn all the electromagnets off
-  digitalWrite(relay25, LOW);
-  digitalWrite(relay35, LOW);
-  digitalWrite(relay45, LOW);
-}
 
 void Reset_Door() {
   bool did_move = false;
@@ -92,16 +59,16 @@ void Reset_Door() {
     VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
     tof.rangingTest(&measure, false);
     door_angle = calc_degree(measure.RangeMilliMeter);
-    if (door_angle < 1){
+    if (door_angle < 1) {
       break;
     }
     did_move = true;
     delay(100);
   }
-  if(did_move){
-   digitalWrite(motor_channel3, HIGH); // turns motor
-   digitalWrite(motor_channel4, LOW);// clockwise
-   delay(time_unwind); //run for certain amount of time
+  if (did_move) {
+    digitalWrite(motor_channel3, HIGH); // turns motor
+    digitalWrite(motor_channel4, LOW);// clockwise
+    delay(time_unwind); //run for certain amount of time
   }
   analogWrite(enable_motor_channel, 0); // turns motor off
 }
@@ -117,7 +84,7 @@ void Enable_Relays(int user_in) {
     delay(100);
   }
   else if (user_in == 1) {
-    digitalWrite(relay25, (relay25_val+1));
+    digitalWrite(relay25, (relay25_val + 1));
     delay(100);
     digitalWrite(relay35, LOW);
     delay(100);
@@ -141,7 +108,7 @@ void Enable_Relays(int user_in) {
     delay(100);
   }
   else if (user_in == 4) {
-    digitalWrite(relay25, (relay25_val+1));
+    digitalWrite(relay25, (relay25_val + 1));
     delay(100);
     digitalWrite(relay35, HIGH);
     delay(100);
@@ -149,7 +116,7 @@ void Enable_Relays(int user_in) {
     delay(100);
   }
   else if (user_in == 5) {
-    digitalWrite(relay25, (relay25_val+1));
+    digitalWrite(relay25, (relay25_val + 1));
     digitalWrite(relay35, LOW);
     digitalWrite(relay45, HIGH);
   }
@@ -159,7 +126,7 @@ void Enable_Relays(int user_in) {
     digitalWrite(relay45, HIGH);
   }
   else if (user_in == 7) {
-    digitalWrite(relay25, (relay25_val+1));
+    digitalWrite(relay25, (relay25_val + 1));
     delay(100);
     digitalWrite(relay35, HIGH);
     delay(100);
@@ -174,8 +141,7 @@ float calc_degree(int distance) {
   return (distance - D0) / ((D1 - D0) / 90); // 90 is max degree door can open from closed position
 }
 
-void loop() {
-  //Temporary Interface for Door testing purposes.
+void get_magnet_val() {
   Serial.print("Enter desired force rating on a scale of 0 to 7: ");
   while (Serial.available() == 0); {
     magnet_input = Serial.parseFloat();
@@ -185,7 +151,9 @@ void loop() {
       junk = Serial.read();
     }
   }
+}
 
+void get_trial_length() {
   Serial.print("Enter How long you would like to run each test (in seconds): ");
   while (Serial.available() == 0); {
     time_input = Serial.parseFloat();
@@ -195,7 +163,9 @@ void loop() {
       junk = Serial.read();
     }
   }
+}
 
+void get_num_trials() {
   Serial.print("Enter How many tests you would like to run: ");
   while (Serial.available() == 0); {
     trial_input = Serial.parseFloat();
@@ -205,6 +175,78 @@ void loop() {
       junk = Serial.read();
     }
   }
+}
+
+void read_handle_val() {
+  for (int chan = 0; chan < 8; chan++) { //reads all 16 channels from mcp3008 chips
+    Serial.print(adc1.readADC(chan));
+    Serial.print("\t");
+    Serial.print(adc2.readADC(chan));
+    Serial.print("\t");
+  }
+}
+
+void read_pull_force() {
+  Serial.print(analogRead(fsr1));
+  Serial.print("\t");
+  Serial.print(analogRead(fsr2));
+  Serial.print("\t");
+  Serial.print(analogRead(fsr3));
+  Serial.print("\t");
+  Serial.print(analogRead(fsr4));
+  Serial.print("\t");
+  Serial.print("[");
+  Serial.print(time);
+  Serial.println("]");
+}
+
+void read_TOF_val() {
+  VL53L0X_RangingMeasurementData_t measure; //value from tof sensor. pointer
+  tof.rangingTest(&measure, false);
+  if (measure.RangeStatus != 4) {  // phase failures have incorrect data
+    door_angle = calc_degree(measure.RangeMilliMeter);
+    Serial.print("Angle of Door (deg): "); Serial.print(door_angle); Serial.print(" ");
+    //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
+  } else {
+    Serial.println(" out of range ");
+  }
+}
+
+/*----------------- Main Code --------------------*/
+
+void setup() {
+  // Initialize the Serial monitor
+  Serial.begin(115200);
+  while (!Serial);
+  //don't run door if TOF is not working
+  if (!tof.begin()) {
+    Serial.println(F("Failed to boot VL53L0X"));
+    while (1);
+  }
+
+  // Begins the SPI devices and declares the pins in order of (CLK, MOSI, MISO, CS)
+  adc1.begin(52, 51, 50, 53);
+  adc2.begin(9, 11, 10, 12);
+  // initialize motor pins as outputs
+  pinMode(motor_channel3, OUTPUT);
+  pinMode(motor_channel4, OUTPUT);
+  pinMode(enable_motor_channel, OUTPUT);
+  // Initializes electromagnet relay pins as outputs
+  pinMode(relay25, OUTPUT);
+  pinMode(relay35, OUTPUT);
+  pinMode(relay45, OUTPUT);
+  // Intialize to turn all the electromagnets off
+  digitalWrite(relay25, LOW);
+  digitalWrite(relay35, LOW);
+  digitalWrite(relay45, LOW);
+}
+
+void loop() {
+  //Temporary Interface for Door testing purposes.
+  get_magnet_val();
+  get_trial_length();
+  get_num_trials();
+
   for (int i = 1; i <= trial_input; i++) { // runs number of trials
     Serial.print("------- trial ");
     Serial.print(i);
@@ -213,45 +255,18 @@ void loop() {
     Enable_Relays(magnet_input); // changes electromagnets based on input
     time = millis();
     stoptime = time + (time_input * 1000); // converts time_input to seconds
-
     while (time < stoptime) {
-      for (int chan = 0; chan < 8; chan++) {
-        Serial.print(adc1.readADC(chan));
-        Serial.print("\t");
-        Serial.print(adc2.readADC(chan));
-        Serial.print("\t");
-      }
-      Serial.print(analogRead(fsr1));
-      Serial.print("\t");
-      Serial.print(analogRead(fsr2));
-      Serial.print("\t");
-      Serial.print(analogRead(fsr3));
-      Serial.print("\t");
-      Serial.print(analogRead(fsr4));
-      Serial.print("\t");
-      Serial.print("[");
-      Serial.print(time);
-      Serial.println("]");
-
-      VL53L0X_RangingMeasurementData_t measure; //value from tof sensor. pointer
-      tof.rangingTest(&measure, false);
-      if (measure.RangeStatus != 4) {  // phase failures have incorrect data
-        door_angle = calc_degree(measure.RangeMilliMeter);
-        Serial.print("Angle of Door (deg): "); Serial.print(door_angle); Serial.print(" ");
-        //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
-      } else {
-        Serial.println(" out of range ");
-      }
-
+      read_handle_val();
+      read_pull_force();
+      read_TOF_val();
       //Turns off electromagnets when not being used.
       //saves energy and reduces heat from electromagnets.
-      if(door_angle > 15){
+      if (door_angle > 15) {
         Enable_Relays(0);
       }
-      else{
+      else {
         Enable_Relays(magnet_input);
       }
-        
       delay(50);
       time = millis();
     }
