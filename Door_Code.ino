@@ -256,9 +256,9 @@ void loop() {
     time = millis();
     stoptime = time + (time_input * 1000); // converts time_input to seconds
     while (time < stoptime) {
+      read_TOF_val();
       read_handle_val();
       read_pull_force();
-      read_TOF_val();
       //Turns off electromagnets when not being used.
       //saves energy and reduces heat from electromagnets.
       if (door_angle > 15) {
