@@ -10,6 +10,20 @@
 #define pulse_friction 9
 #define direction_friction 8
 
+//FSR402 data pins (from handle)
+#define fsr_1 A0
+#define fsr_2 A1
+#define fsr_3 A2
+#define fsr_4 A3
+#define fsr_5 A4
+#define fsr_6 A5
+#define fsr_7 A6
+#define fsr_8 A7
+#define fsr_9 A8
+#define fsr_10 A9
+#define fsr_11 A10
+#define fsr_12 A11
+
 AccelStepper reset_motor(1,pulse_reset,direction_reset);
 AccelStepper friction_motor(1,pulse_friction, direction_friction);
 
@@ -77,6 +91,21 @@ void reset_friction(){
   //Serial.print("Starting Position: "); Serial.print(friction_motor.currentPosition()); Serial.println();
 }
 
+void read_handle_val(){
+  Serial.print(analogRead(fsr_1)); Serial.print(" ");
+  Serial.print(analogRead(fsr_2)); Serial.print(" ");
+  Serial.print(analogRead(fsr_3)); Serial.print(" ");
+  Serial.print(analogRead(fsr_4)); Serial.print(" ");
+  Serial.print(analogRead(fsr_5)); Serial.print(" ");
+  Serial.print(analogRead(fsr_6)); Serial.print(" ");
+  Serial.print(analogRead(fsr_7)); Serial.print(" ");
+  Serial.print(analogRead(fsr_8)); Serial.print(" ");
+  Serial.print(analogRead(fsr_9)); Serial.print(" ");
+  Serial.print(analogRead(fsr_10)); Serial.print(" ");
+  Serial.print(analogRead(fsr_11)); Serial.print(" ");
+  Serial.print(analogRead(fsr_12)); Serial.print(" ");
+}
+
 void setup() {
   Serial.begin(9600);
   while(!Serial){
@@ -93,6 +122,19 @@ void setup() {
  pinMode(direction_friction, OUTPUT);
  friction_motor.setMaxSpeed(20000);
  reset_motor.setMaxSpeed(20000);
+
+ pinMode(fsr_1, INPUT);
+ pinMode(fsr_2, INPUT);
+ pinMode(fsr_3, INPUT);
+ pinMode(fsr_4, INPUT);
+ pinMode(fsr_5, INPUT);
+ pinMode(fsr_6, INPUT);
+ pinMode(fsr_7, INPUT);
+ pinMode(fsr_8, INPUT);
+ pinMode(fsr_9, INPUT);
+ pinMode(fsr_10, INPUT);
+ pinMode(fsr_11, INPUT);
+ pinMode(fsr_12, INPUT);
 }
 
 void loop() {
@@ -107,24 +149,16 @@ void loop() {
  }
  set_friction(force_input);
 
- Serial.print("Press Enter to Stop");
- while (Serial.available() == 0); {
-   force_input = Serial.parseFloat();
-   //Serial.print(force_input, 0);
-   Serial.print("\n");
-   while (Serial.available() > 0) {
-     junk = Serial.read();
-   }
- }
  reset_friction();
  VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
  tof.rangingTest(&measure, false);
  start_pos = measure.RangeMilliMeter; // initialize starting pos of drawer
+ 
  //for testing purposes only:
  time = millis();
  time_stop = time + 15000;
+ 
  while(time < time_stop){ // main loop for getting fsr values and pos of drawer
- time = millis();
  tof.rangingTest(&measure, false);
  if(measure.RangeMilliMeter <= start_pos){
    Serial.print("Distance Drawer is out: 0mm");
@@ -132,10 +166,13 @@ void loop() {
  else{
    Serial.print("Distance Drawer is out: "); Serial.print((measure.RangeMilliMeter - start_pos)); Serial.print("mm");
  }
+ 
   Serial.print(". Time: "); Serial.print(time);
+  read_handle_val();
   Serial.println();
   delay(50);
+  time = millis();
  }
  reset_friction();
  reset_drawer(measure);
- }
+}
