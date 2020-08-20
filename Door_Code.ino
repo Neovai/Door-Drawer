@@ -244,6 +244,8 @@ void loop() {
     Serial.print(" -------");
     Serial.print("\n");
     Enable_Relays(magnet_input); // changes electromagnets based on input
+    bool switched_on = true;
+    bool switched_off = false;
     time = millis();
     stoptime = time + (time_input * 1000); // converts time_input to seconds
     while (time < stoptime) {
@@ -252,11 +254,15 @@ void loop() {
       read_pull_force();
       //Turns off electromagnets when not being used.
       //saves energy and reduces heat from electromagnets.
-      if (door_angle > 15) {
+      if (door_angle > 15 && !switched_off) {
         Enable_Relays(0);
+        switched_off = true;
+        switched_on = false;
       }
-      else {
+      else if(door_angle <= 15 && !switched_on){
         Enable_Relays(magnet_input);
+        switched_off = false;
+        switched_on = true;
       }
       delay(50);
       time = millis();
