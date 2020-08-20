@@ -68,43 +68,28 @@ void Enable_Relays(int user_in) {
   int relay25_val = 0; //for testing purposes
   if (user_in == 0) {
     digitalWrite(relay25, relay25_val);
-    delay(100);
     digitalWrite(relay35, LOW);
-    delay(100);
     digitalWrite(relay45, LOW);
-    delay(100);
   }
   else if (user_in == 1) {
     digitalWrite(relay25, (relay25_val + 1));
-    delay(100);
     digitalWrite(relay35, LOW);
-    delay(100);
     digitalWrite(relay45, LOW);
-    delay(100);
   }
   else if (user_in == 2) {
     digitalWrite(relay25, relay25_val);
-    delay(100);
     digitalWrite(relay35, HIGH);
-    delay(100);
     digitalWrite(relay45, LOW);
-    delay(100);
   }
   else if (user_in == 3) {
     digitalWrite(relay25, relay25_val);
-    delay(100);
     digitalWrite(relay35, LOW);
-    delay(100);
     digitalWrite(relay45, HIGH);
-    delay(100);
   }
   else if (user_in == 4) {
     digitalWrite(relay25, (relay25_val + 1));
-    delay(100);
     digitalWrite(relay35, HIGH);
-    delay(100);
     digitalWrite(relay45, LOW);
-    delay(100);
   }
   else if (user_in == 5) {
     digitalWrite(relay25, (relay25_val + 1));
@@ -118,11 +103,8 @@ void Enable_Relays(int user_in) {
   }
   else if (user_in == 7) {
     digitalWrite(relay25, (relay25_val + 1));
-    delay(100);
     digitalWrite(relay35, HIGH);
-    delay(100);
     digitalWrite(relay45, HIGH);
-    delay(100);
   }
 }
 
