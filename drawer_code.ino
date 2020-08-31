@@ -88,18 +88,18 @@ void reset_friction() {
 }
 
 void read_handle_val() {
-  Serial.print(analogRead(fsr_1)); Serial.print(" ");
-  Serial.print(analogRead(fsr_2)); Serial.print(" ");
-  Serial.print(analogRead(fsr_3)); Serial.print(" ");
-  Serial.print(analogRead(fsr_4)); Serial.print(" ");
-  Serial.print(analogRead(fsr_5)); Serial.print(" ");
-  Serial.print(analogRead(fsr_6)); Serial.print(" ");
-  Serial.print(analogRead(fsr_7)); Serial.print(" ");
-  Serial.print(analogRead(fsr_8)); Serial.print(" ");
-  Serial.print(analogRead(fsr_9)); Serial.print(" ");
-  Serial.print(analogRead(fsr_10)); Serial.print(" ");
-  Serial.print(analogRead(fsr_11)); Serial.print(" ");
-  Serial.print(analogRead(fsr_12)); Serial.print(" ");
+  convert_force(analogRead(fsr_1)); Serial.print(" ");
+  convert_force(analogRead(fsr_2)); Serial.print(" ");
+  convert_force(analogRead(fsr_3)); Serial.print(" ");
+  convert_force(analogRead(fsr_4)); Serial.print(" ");
+  convert_force(analogRead(fsr_5)); Serial.print(" ");
+  convert_force(analogRead(fsr_6)); Serial.print(" ");
+  convert_force(analogRead(fsr_7)); Serial.print(" ");
+  convert_force(analogRead(fsr_8)); Serial.print(" ");
+  convert_force(analogRead(fsr_9)); Serial.print(" ");
+  convert_force(analogRead(fsr_10)); Serial.print(" ");
+  convert_force(analogRead(fsr_11)); Serial.print(" ");
+  covnert_force(analogRead(fsr_12)); Serial.print(" ");
 }
 
 void get_force_val() {
@@ -111,6 +111,39 @@ void get_force_val() {
     while (Serial.available() > 0) {
       junk = Serial.read();
     }
+  }
+}
+
+void convert_force(int reading){
+  int voltage;
+  unsigned long resistance;
+  unsigned long conductance;
+  long force;
+  int resistor = 10000; //10k resistor
+  int Vcc = 3300; //in mV, using 3.3v in voltage divider circuit
+  
+  voltage = map(reading, 0, 616, 0, 3300); //re-maps voltage value. 616 is fsr max output when using 10k resistor and 3.3v
+  if(voltage == 0){
+    Serial.print(0);
+  }
+  else{
+    //fsr = ((Vcc - v) * R) / v
+    resistance = Vcc - voltage;
+    reistance *= resistor;
+    resistance /= voltage;
+    
+    conductance = 1000000; //micro-ohms
+    conductance /= resistance;
+    //the value of the FSR's is a parabola based on the force applied
+    //this splits the parabola into two linear equations for approximation
+    if(conductance <= 1000){
+      force = conductance / 80;
+    }
+    else{
+      force = conductance - 1000;
+      force /= 30;
+    }
+    Serial.print(force);
   }
 }
 
