@@ -99,7 +99,7 @@ void read_handle_val() {
   convert_force(analogRead(fsr_9)); Serial.print(" ");
   convert_force(analogRead(fsr_10)); Serial.print(" ");
   convert_force(analogRead(fsr_11)); Serial.print(" ");
-  covnert_force(analogRead(fsr_12)); Serial.print(" ");
+  convert_force(analogRead(fsr_12)); Serial.print(" ");
 }
 
 void get_force_val() {
