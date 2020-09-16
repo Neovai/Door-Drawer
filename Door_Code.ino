@@ -14,11 +14,22 @@
 #define relay45 44
 
 // Initialize FSR and Potentiometer in door frame
-#define pot A0
-#define fsr1 A1
-#define fsr2 A2
-#define fsr3 A3
-#define fsr4 A4
+#define fsr_13 A0
+#define fsr_14 A1
+#define fsr_15 A2
+#define fsr_16 A3
+#define fsr_1 A7 //A7
+#define fsr_2 A15 //A15
+#define fsr_3 A10 //A10
+#define fsr_4 A4 //A4
+#define fsr_5 A12 //A12
+#define fsr_6 A5 //TBA
+#define fsr_7 A6 //TBA
+#define fsr_8 A13 //TBA
+#define fsr_9 A8 //A8
+#define fsr_10 A14 //A14
+#define fsr_11 A9 //A9
+#define fsr_12 A11 //A11
 
 // Initialize the SPI devices
 Adafruit_MCP3008 adc1; //SPI 1
@@ -31,13 +42,88 @@ float door_angle;
 // Initialize user input variables
 float magnet_input;
 float time_input;
-float trial_input;
 char junk = ' ';
 unsigned long time;
 unsigned long stoptime;
 
 //declare motor variable for time
 const int time_unwind = 2000; // in ms
+
+void setup() {
+  // Initialize the Serial monitor
+  Serial.begin(115200);
+  while (!Serial){
+    ;
+  }
+  //don't run door if TOF is not working
+  if (!tof.begin()) {
+    Serial.println(F("Failed to boot VL53L0X"));
+    while (1);
+  }
+
+  // Begins the SPI devices and declares the pins in order of (CLK, MOSI, MISO, CS)
+  adc1.begin(52, 51, 50, 53);
+  adc2.begin(9, 11, 10, 12);
+  // initialize motor pins as outputs
+  pinMode(motor_channel3, OUTPUT);
+  pinMode(motor_channel4, OUTPUT);
+  pinMode(enable_motor_channel, OUTPUT);
+  // Initializes electromagnet relay pins as outputs
+  pinMode(relay25, OUTPUT);
+  pinMode(relay35, OUTPUT);
+  pinMode(relay45, OUTPUT);
+  //initialize fsr's
+  pinMode(fsr_1, INPUT);
+  pinMode(fsr_2, INPUT);
+  pinMode(fsr_3, INPUT);
+  pinMode(fsr_4, INPUT);
+  pinMode(fsr_5, INPUT);
+  pinMode(fsr_6, INPUT);
+  pinMode(fsr_7, INPUT);
+  pinMode(fsr_8, INPUT);
+  pinMode(fsr_9, INPUT);
+  pinMode(fsr_10, INPUT);
+  pinMode(fsr_11, INPUT);
+  pinMode(fsr_12, INPUT);
+  pinMode(fsr_13, INPUT);
+  pinMode(fsr_14, INPUT);
+  pinMode(fsr_15, INPUT);
+  pinMode(fsr_16, INPUT);
+}
+
+void loop() {
+  //Temporary Interface for Door testing purposes.
+  get_magnet_val();
+  get_trial_length();
+  
+  Enable_Relays(magnet_input); // changes electromagnets based on input
+  bool switched_off = false;
+  bool switched_on = true;
+  time = millis();
+  stoptime = time + (time_input * 1000); // converts time_input to seconds
+  while (time < stoptime) {
+    read_TOF_val();
+    read_handle_val();
+    //read_pull_force();
+    Serial.println(time);
+    //Turns off electromagnets when not being used.
+    //saves energy and reduces heat from electromagnets.
+    if (door_angle > 15 && !switched_off) {
+      Enable_Relays(0);
+      switched_on = false;
+      switched_off = true;
+    }
+    else if (door_angle <= 15 && !switched_on) {
+      Enable_Relays(magnet_input);
+      switched_off = false;
+      switched_on = true;
+    }
+
+    delay(50);
+    time = millis();
+  }
+  Reset_Door(); // automatically close door
+}
 
 void Reset_Door() {
   bool did_move = false;
@@ -138,117 +224,84 @@ void get_trial_length() {
   }
 }
 
-void get_num_trials() {
-  Serial.print("Enter How many tests you would like to run: ");
-  while (Serial.available() == 0); {
-    trial_input = Serial.parseFloat();
-    Serial.print(trial_input, 0);
-    Serial.print("\n");
-    while (Serial.available() > 0) {
-      junk = Serial.read();
-    }
-  }
-}
-
 void read_handle_val() {
-  for (int chan = 0; chan < 8; chan++) { //reads all 16 channels from mcp3008 chips
-    Serial.print(adc1.readADC(chan));
-    Serial.print("\t");
-    Serial.print(adc2.readADC(chan));
-    Serial.print("\t");
-  }
+  /*convert_force(analogRead(fsr_1)); Serial.print(" ");
+  convert_force(analogRead(fsr_2)); Serial.print(" ");
+  convert_force(analogRead(fsr_3)); Serial.print(" ");
+  convert_force(analogRead(fsr_4)); Serial.print(" ");
+  convert_force(analogRead(fsr_5)); Serial.print(" ");
+  convert_force(analogRead(fsr_6)); Serial.print(" ");
+  convert_force(analogRead(fsr_7)); Serial.print(" ");
+  convert_force(analogRead(fsr_8)); Serial.print(" ");
+  convert_force(analogRead(fsr_9)); Serial.print(" ");
+  convert_force(analogRead(fsr_10)); Serial.print(" ");
+  convert_force(analogRead(fsr_11)); Serial.print(" ");
+  convert_force(analogRead(fsr_12)); Serial.print(" ");*/
+  Serial.println(analogRead(fsr_1));
+  Serial.println(analogRead(fsr_2));
+  Serial.println(analogRead(fsr_3));
+  Serial.println(analogRead(fsr_4));
+  Serial.println(analogRead(fsr_5));
+  Serial.println(analogRead(fsr_6));
+  Serial.println(analogRead(fsr_7));
+  Serial.println(analogRead(fsr_8));
+  Serial.println(analogRead(fsr_9));
+  Serial.println(analogRead(fsr_10));
+  Serial.println(analogRead(fsr_11));
+  Serial.println(analogRead(fsr_12));
 }
 
-void read_pull_force() {
-  Serial.print(analogRead(fsr1));
+/*void read_pull_force() {
+  convert_force(analogRead(fsr_13));
   Serial.print("\t");
-  Serial.print(analogRead(fsr2));
+  convert_force(analogRead(fsr_14));
   Serial.print("\t");
-  Serial.print(analogRead(fsr3));
+  convert_force(analogRead(fsr_15));
   Serial.print("\t");
-  Serial.print(analogRead(fsr4));
+  convert_force(analogRead(fsr_16));
   Serial.print("\t");
-  Serial.print("[");
-  Serial.print(time);
-  Serial.println("]");
-}
+}*/
 
 void read_TOF_val() {
   VL53L0X_RangingMeasurementData_t measure; //value from tof sensor. pointer
   tof.rangingTest(&measure, false);
-  if (measure.RangeStatus != 4) {  // phase failures have incorrect data
-    door_angle = calc_degree(measure.RangeMilliMeter);
-    Serial.print("Angle of Door (deg): "); Serial.print(door_angle); Serial.print(" ");
-    //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
-  } else {
-    Serial.println(" out of range ");
+  door_angle = calc_degree(measure.RangeMilliMeter); 
+  if (door_angle < 0) {
+    door_angle = 0;
   }
+  Serial.prinlnt(door_angle);
+  //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
 }
 
-/*----------------- Main Code --------------------*/
-
-void setup() {
-  // Initialize the Serial monitor
-  Serial.begin(115200);
-  while (!Serial);
-  //don't run door if TOF is not working
-  if (!tof.begin()) {
-    Serial.println(F("Failed to boot VL53L0X"));
-    while (1);
+/*void convert_force(int reading){
+  float voltage;
+  float resistance;
+  float conductance;
+  float force;
+  int resistor = 10000; //we use a 10k resistor in the voltage divider circuit
+  int Vcc = 5000; //in mV, we used 5v
+  voltage = map(reading, 0, 1023, 0, Vcc); //re-maps voltage val to fsr reading range. 1023 is FSR max output when using 10k resistor and 5v
+  //voltage = long(reading * Vcc) / 616; 
+  if(voltage == 0){
+    Serial.print(0); //no force
   }
+  else{
+    //fsr = ((Vcc - v) * R) / v
+    resistance = Vcc -  voltage;
+    resistance *= resistor;
+    resistance /= voltage;
 
-  // Begins the SPI devices and declares the pins in order of (CLK, MOSI, MISO, CS)
-  adc1.begin(52, 51, 50, 53);
-  adc2.begin(9, 11, 10, 12);
-  // initialize motor pins as outputs
-  pinMode(motor_channel3, OUTPUT);
-  pinMode(motor_channel4, OUTPUT);
-  pinMode(enable_motor_channel, OUTPUT);
-  // Initializes electromagnet relay pins as outputs
-  pinMode(relay25, OUTPUT);
-  pinMode(relay35, OUTPUT);
-  pinMode(relay45, OUTPUT);
-  // Intialize to turn all the electromagnets off
-  digitalWrite(relay25, LOW);
-  digitalWrite(relay35, LOW);
-  digitalWrite(relay45, LOW);
-}
-
-void loop() {
-  //Temporary Interface for Door testing purposes.
-  get_magnet_val();
-  get_trial_length();
-  get_num_trials();
-
-  for (int i = 1; i <= trial_input; i++) { // runs number of trials
-    Serial.print("------- trial ");
-    Serial.print(i);
-    Serial.print(" -------");
-    Serial.print("\n");
-    Enable_Relays(magnet_input); // changes electromagnets based on input
-    bool switched_on = true;
-    bool switched_off = false;
-    time = millis();
-    stoptime = time + (time_input * 1000); // converts time_input to seconds
-    while (time < stoptime) {
-      read_TOF_val();
-      read_handle_val();
-      read_pull_force();
-      //Turns off electromagnets when not being used.
-      //saves energy and reduces heat from electromagnets.
-      if (door_angle > 15 && !switched_off) {
-        Enable_Relays(0);
-        switched_off = true;
-        switched_on = false;
-      }
-      else if(door_angle <= 15 && !switched_on){
-        Enable_Relays(magnet_input);
-        switched_off = false;
-        switched_on = true;
-      }
-      delay(50);
-      time = millis();
+    conductance = 100000; //in micro-Ohms
+    conductance /= resistance;
+    //the value of the FSR's is a parabola based on the force applied.
+    //this splits the parabola into two linear equations for linear approximation
+    if(conductance <= 1000){
+      force = conductance / 80;
     }
-    Reset_Door(); // automatically close door
+    else{
+      force = conductance - 1000;
+      force /= 30;
+    }
+    Serial.print(force);
   }
-}
+}*/
