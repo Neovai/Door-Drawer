@@ -1,3 +1,5 @@
+//this version of the code is used for testing the Door with the Arduino Serial Monitor. Thus, the UI is through the serial monitor
+
 // Include the necessary libraries
 #include "math.h" //Includes math library
 #include <Adafruit_MCP3008.h> //Includes library for SPI communications
