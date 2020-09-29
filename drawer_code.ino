@@ -1,3 +1,5 @@
+//This version of the drawer code is meant to test the drawer through the arduino serial monitor. Thus, the UI is through the Arduino IDE
+
 #include <AccelStepper.h>
 #include <MultiStepper.h>
 #include "Adafruit_VL53L0X.h"
