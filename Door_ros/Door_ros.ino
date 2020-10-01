@@ -43,6 +43,7 @@ float door_angle;
 int magnet_input;
 unsigned long time;
 unsigned long stoptime;
+unsigned long start_time;
 
 //declare motor variable for time
 const int time_unwind = 2000; // in ms
@@ -69,7 +70,6 @@ ros::Subscriber<std_msgs::Int32> sub("reset_start", &reset_callback);
 ros::Subscriber<std_msgs::Int32> datasub("collection_start", &data_callback);
 
 void setup() {
-  // Initialize the Serial monitor
   Serial.begin(57600);
   n.initNode();
   n.subscribe(sub);
@@ -122,11 +122,11 @@ void loop() {
     n.spinOnce();
     delay(1);
   }
-  
+ 
   Enable_Relays(magnet_input); // changes electromagnets based on input
   //bool switched_off = false;
   //bool switched_on = true;
-  time = millis();
+  start_time = millis();
   while (data_collection_flag) {
     n.spinOnce();
     collect_data();
@@ -143,7 +143,6 @@ void loop() {
       switched_off = false;
       switched_on = true;
     }*/
-    time = millis();
   }
 
   n.spinOnce();
@@ -284,6 +283,7 @@ void collect_data(){
     read_TOF_val();
     read_handle_val();
     read_pull_force();
+    time = millis() - start_time;
     data_point.data = time;
     datapub.publish(&data_point);
 }
