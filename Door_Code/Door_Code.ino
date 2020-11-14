@@ -110,7 +110,7 @@ void loop() {
     Serial.println(time);
     //Turns off electromagnets when not being used.
     //saves energy and reduces heat from electromagnets.
-    if (door_angle > 15 && !switched_off) {
+    /*if (door_angle > 15 && !switched_off) {
       Enable_Relays(0);
       switched_on = false;
       switched_off = true;
@@ -119,9 +119,9 @@ void loop() {
       Enable_Relays(magnet_input);
       switched_off = false;
       switched_on = true;
-    }
+    }*/
 
-    delay(50);
+    //delay(50);
     time = millis();
   }
   Reset_Door(); // automatically close door
@@ -131,6 +131,7 @@ void Reset_Door() {
   bool did_move = false;
   int motor_speed = 100; //max speed for the motor
   Enable_Relays(0); // turns off magnets; makes motor faster
+  //delay(500);
   analogWrite(enable_motor_channel, motor_speed); //turns motor on
   digitalWrite(motor_channel3, LOW);// turns motor
   digitalWrite(motor_channel4, HIGH); // counter clockwise
@@ -138,11 +139,12 @@ void Reset_Door() {
     VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
     tof.rangingTest(&measure, false);
     door_angle = calc_degree(measure.RangeMilliMeter);
+    Serial.print("Angle of the door during closing: "); Serial.println(door_angle);
     if (door_angle < 1) {
       break;
     }
     did_move = true;
-    delay(100);
+    //delay(100);
   }
   if (did_move) {
     digitalWrite(motor_channel3, HIGH); // turns motor
@@ -271,7 +273,7 @@ void read_TOF_val() {
   if (door_angle < 0) {
     door_angle = 0;
   }
-  Serial.prinlnt(door_angle);
+  Serial.println(door_angle);
   //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
 }
 

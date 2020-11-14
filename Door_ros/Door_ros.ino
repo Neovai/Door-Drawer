@@ -53,7 +53,7 @@ ros::NodeHandle n;
 int data_collection_flag = 0;
 std_msgs::Int32 reset_answer;
 std_msgs::Int32 data_point;
-ros::Publisher pub("reset_complete", &data_point);
+ros::Publisher pub("reset_complete", &reset_answer);
 ros::Publisher datapub("door_data", &data_point);
 
 //ros callback functions for data_start and reset_start topics 
@@ -115,6 +115,8 @@ void setup() {
   pinMode(fsr_14, INPUT);
   //pinMode(fsr_15, INPUT);
   //pinMode(fsr_16, INPUT);
+  //data_point.data = 1;
+  //pub.publish(&datapoint);
 }
 
 void loop() {
@@ -157,12 +159,15 @@ void Reset_Door() {
   analogWrite(enable_motor_channel, motor_speed); //turns motor on
   digitalWrite(motor_channel3, LOW);// turns motor
   digitalWrite(motor_channel4, HIGH); // counter clockwise
+  VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
   while (true) { // door is open more than 1 degree
     n.spinOnce();
-    VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
     tof.rangingTest(&measure, false);
+    //testing
     door_angle = calc_degree(measure.RangeMilliMeter);
-    if (door_angle < 1) {
+    /*data_point.data = door_angle;
+    datapub.publish(&data_point);*/
+    if (door_angle < 2) {
       break;
     }
     did_move = true;
@@ -170,14 +175,14 @@ void Reset_Door() {
   if (did_move) {
     time = millis();
     unsigned long time_stop = time + time_unwind;
+    digitalWrite(motor_channel3, HIGH); // turns motor
+    digitalWrite(motor_channel4, LOW);// clockwise
     while(time < (time_stop)){
-      digitalWrite(motor_channel3, HIGH); // turns motor
-      digitalWrite(motor_channel4, LOW);// clockwise
       n.spinOnce();
       time=millis();
       //testing purposes only
-      data_point.data = -5;
-      datapub.publish(&data_point);
+      /*data_point.data = -5;
+      datapub.publish(&data_point);*/
     }
   }
   analogWrite(enable_motor_channel, 0); // turns motor off
@@ -230,7 +235,7 @@ void Enable_Relays(int user_in) {
 float calc_degree(int distance) {
   float D0 = 289; // value of distance from tof when door is closed
   float D1 = 418; //value of distance from tof when door is fully open
-  return (distance - D0) / ((D1 - D0) / 90); // 90 is max degree door can open from closed position
+  return (distance - D0) / ((D1 - D0) / 90); // 90 degrees is where D1 was measured at
 }
 
 void read_handle_val() {

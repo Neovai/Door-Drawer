@@ -205,7 +205,7 @@ void loop() {
   //for testing purposes only:
   time = millis();
   time_stop = time + 15000;
-  while ( true /*time < time_stop*/) { // main loop for getting fsr values and pos of drawer
+  while ( /*true*/ time < time_stop) { // main loop for getting fsr values and pos of drawer
     tof.rangingTest(&measure, false);
     if (measure.RangeMilliMeter <= start_pos) {
       Serial.println(0);
