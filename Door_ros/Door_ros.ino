@@ -4,6 +4,7 @@
 #include "Adafruit_VL53L0X.h" //library for time of fligh sensor (tof)
 #include <ros.h>
 #include <std_msgs/Int32.h>
+#include <infrastructure_msgs/DoorSensors.h>
 
 //define pins for motor controller
 #define enable_motor_channel 6 //pwm pin
@@ -52,9 +53,12 @@ const int time_unwind = 2000; // in ms
 ros::NodeHandle n;
 int data_collection_flag = 0;
 std_msgs::Int32 reset_answer;
-std_msgs::Int32 data_point;
+//std_msgs::Int32 data_point;
+infrastructure_msgs::DoorSensors data;
+//ros::Publisher pub("reset_complete", &data_point);
+//ros::Publisher datapub("door_data", &data_point);
 ros::Publisher pub("reset_complete", &reset_answer);
-ros::Publisher datapub("door_data", &data_point);
+ros::Publisher datapub("door_data", &data);
 
 //ros callback functions for data_start and reset_start topics 
 void reset_callback(const std_msgs::Int32& req){
@@ -81,8 +85,8 @@ void setup() {
   if (!tof.begin()) {
     while (1){
       n.spinOnce();
-      data_point.data = -10;
-      datapub.publish(&data_point);
+      //data_point.data = -10;
+      //datapub.publish(&data_point);
       delay(1);
     }
   }
@@ -113,10 +117,6 @@ void setup() {
   pinMode(fsr_12, INPUT);
   pinMode(fsr_13, INPUT);
   pinMode(fsr_14, INPUT);
-  //pinMode(fsr_15, INPUT);
-  //pinMode(fsr_16, INPUT);
-  //data_point.data = 1;
-  //pub.publish(&datapoint);
 }
 
 void loop() {
@@ -239,8 +239,7 @@ float calc_degree(int distance) {
 }
 
 void read_handle_val() {
-  //pub.publish(analogRead(fsr_1)); will this work?
-  data_point.data = analogRead(fsr_1);
+  /*data_point.data = analogRead(fsr_1);
   datapub.publish(&data_point);
   data_point.data = analogRead(fsr_2);
   datapub.publish(&data_point);
@@ -263,7 +262,19 @@ void read_handle_val() {
   data_point.data = analogRead(fsr_11);
   datapub.publish(&data_point);
   data_point.data = analogRead(fsr_12);
-  datapub.publish(&data_point);
+  datapub.publish(&data_point);*/
+  data.fsr1 = analogRead(fsr_1);
+  data.fsr2 = analogRead(fsr_2);
+  data.fsr3 = analogRead(fsr_3);
+  data.fsr4 = analogRead(fsr_4);
+  data.fsr5 = analogRead(fsr_5);
+  data.fsr6 = analogRead(fsr_6);
+  data.fsr7 = analogRead(fsr_7);
+  data.fsr8 = analogRead(fsr_8);
+  data.fsr9 = analogRead(fsr_9);
+  data.fsr10 = analogRead(fsr_10);
+  data.fsr11 = analogRead(fsr_11);
+  data.fsr12 = analogRead(fsr_12);
 }
 
 void read_TOF_val() {
@@ -273,22 +284,27 @@ void read_TOF_val() {
   if (door_angle < 0) {
     door_angle = 0;
   }
-  data_point.data = door_angle;
-  datapub.publish(&data_point);
+  data.tof = door_angle;
+  //data_point.data = door_angle;
+  //datapub.publish(&data_point);
 }
 
 void read_pull_force() {
-  data_point.data = analogRead(fsr_13);
+  data.fsr_contact_1 = analogRead(fsr_13);
+  data.fsr_contact_2 = analogRead(fsr_14);
+  /*data_point.data = analogRead(fsr_13);
   datapub.publish(&data_point);
   data_point.data = analogRead(fsr_14);
-  datapub.publish(&data_point);
+  datapub.publish(&data_point);*/
 }
 
 void collect_data(){
     read_TOF_val();
     read_handle_val();
     read_pull_force();
-    time = millis() - start_time;
-    data_point.data = time;
-    datapub.publish(&data_point);
+    data.current_time = n.now(); //gets the time of the device roscore is running on
+    datapub.publish(&data);
+    //time = millis() - start_time;
+    //data_point.data = time;
+    //datapub.publish(&data_point);
 }

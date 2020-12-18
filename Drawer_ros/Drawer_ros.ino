@@ -4,6 +4,7 @@
 #include "Adafruit_VL53L0X.h"
 #include <ros.h>
 #include <std_msgs/Int32.h>
+#include <infrastructure_msgs/DoorSensors.h>
 
 //reset motor pins
 #define pulse_reset 3
@@ -35,9 +36,9 @@ int start_pos; //distance of drawer from tof in starting pos, the '0' position.
 const int buffer_val = 5; //buffer value for tof sensor for calculating distance
 const float fric_steps = .00032; //constant that represents relation between friction setting to motor steps
 const float base_friction = .3; //min resistance that drawer has
-const float min_steps = 2500; //min steps it takes to get brake to touch drawer fin
+const int min_steps = 2500; //min steps it takes to get brake to touch drawer fin
 float force_input; //input from user to set resistance rating
-char junk = ' ';
+//char junk = ' ';
 
 const int time_unwind = 4000; //in ms
 unsigned long time;
@@ -48,9 +49,12 @@ unsigned long start_time;
 ros::NodeHandle n;
 int data_collection_flag = 0;
 std_msgs::Int32 reset_answer;
-std_msgs::Int32 data_point;
-ros::Publisher pub("reset_complete", &data_point);
-ros::Publisher datapub("door_data", &data_point);
+//std_msgs::Int32 data_point;
+infrastructure_msgs::DoorSensors data;
+//ros::Publisher pub("reset_complete", &data_point);
+//ros::Publisher datapub("door_data", &data_point);
+ros::Publisher pub("reset_complete", &reset_answer);
+ros::Publisher datapub("door_data", &data);
 
 //ros callback functions for data_start and reset_start topics 
 void reset_callback(const std_msgs::Int32& req){
@@ -77,8 +81,8 @@ void setup() {
   if (!tof.begin()) {
     while (1){
       n.spinOnce();
-      data_point.data = -10;
-      datapub.publish(&data_point);
+      //data_point.data = -10;
+      //datapub.publish(&data_point);
       delay(1);
     }
   }
@@ -178,7 +182,7 @@ void reset_friction() {
 }
 
 void read_handle_val() {
-  data_point.data = analogRead(fsr_1);
+  /*data_point.data = analogRead(fsr_1);
   datapub.publish(&data_point);
   data_point.data = analogRead(fsr_2);
   datapub.publish(&data_point);
@@ -201,7 +205,19 @@ void read_handle_val() {
   data_point.data = analogRead(fsr_11);
   datapub.publish(&data_point);
   data_point.data = analogRead(fsr_12);
-  datapub.publish(&data_point);
+  datapub.publish(&data_point);*/
+  data.fsr1 = analogRead(fsr_1);
+  data.fsr2 = analogRead(fsr_2);
+  data.fsr3 = analogRead(fsr_3);
+  data.fsr4 = analogRead(fsr_4);
+  data.fsr5 = analogRead(fsr_5);
+  data.fsr6 = analogRead(fsr_6);
+  data.fsr7 = analogRead(fsr_7);
+  data.fsr8 = analogRead(fsr_8);
+  data.fsr9 = analogRead(fsr_9);
+  data.fsr10 = analogRead(fsr_10);
+  data.fsr11 = analogRead(fsr_11);
+  data.fsr12 = analogRead(fsr_12);
 }
 
 void read_TOF_val() {
@@ -214,23 +230,28 @@ void read_TOF_val() {
   else {
    drawer_distance = measure.RangeMilliMeter - start_pos;
   }
-  data_point.data = drawer_distance;
-  datapub.publish(&data_point);
+  data.tof = drawer_distance;
+  //data_point.data = drawer_distance;
+  //datapub.publish(&data_point);
 }
 
 //outputs negative values as placeholders for fsr13 and fsr14.
 //Used so we can use the same custom message for the door and drawer
 void dummy_val()  {
-  data_point.data = -1;
-  datapub.publish(&data_point);
-  datapub.publish(&data_point);
+  data.fsr_contact_1 = -1;
+  data.fsr_contact_2 = -1;
+  //data_point.data = -1;
+  //datapub.publish(&data_point);
+  //datapub.publish(&data_point);
 }
 
 void collect_data() {
   read_TOF_val();
   read_handle_val();
   dummy_val();
-  time = millis() - start_time;
-  data_point.data = time;
-  datapub.publish(&data_point);
+  data.current_time = n.now(); //gets the time of the device roscore is running on
+  datapub.publish(&data);
+  //time = millis() - start_time;
+  //data_point.data = time;
+  //datapub.publish(&data_point);
 }
