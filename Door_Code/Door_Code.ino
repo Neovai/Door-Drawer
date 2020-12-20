@@ -106,32 +106,17 @@ void loop() {
   while (time < stoptime) {
     read_TOF_val();
     read_handle_val();
-    //read_pull_force();
-    Serial.println(time);
-    //Turns off electromagnets when not being used.
-    //saves energy and reduces heat from electromagnets.
-    /*if (door_angle > 15 && !switched_off) {
-      Enable_Relays(0);
-      switched_on = false;
-      switched_off = true;
-    }
-    else if (door_angle <= 15 && !switched_on) {
-      Enable_Relays(magnet_input);
-      switched_off = false;
-      switched_on = true;
-    }*/
-
-    //delay(50);
+    read_pull_force();
     time = millis();
+    Serial.println(time);
   }
+  Enable_Relays(0);
   Reset_Door(); // automatically close door
 }
 
 void Reset_Door() {
   bool did_move = false;
   int motor_speed = 100; //max speed for the motor
-  Enable_Relays(0); // turns off magnets; makes motor faster
-  //delay(500);
   analogWrite(enable_motor_channel, motor_speed); //turns motor on
   digitalWrite(motor_channel3, LOW);// turns motor
   digitalWrite(motor_channel4, HIGH); // counter clockwise
@@ -156,44 +141,61 @@ void Reset_Door() {
 
 void Enable_Relays(int user_in) {
   int relay25_val = 0; //for testing purposes
+  int delay_time = 1; //1 works
   if (user_in == 0) {
     digitalWrite(relay25, relay25_val);
+    delay(delay_time);
     digitalWrite(relay35, LOW);
+    delay(delay_time);
     digitalWrite(relay45, LOW);
   }
   else if (user_in == 1) {
     digitalWrite(relay25, (relay25_val + 1));
+    delay(delay_time);
     digitalWrite(relay35, LOW);
+    delay(delay_time);
     digitalWrite(relay45, LOW);
   }
   else if (user_in == 2) {
     digitalWrite(relay25, relay25_val);
+    delay(delay_time);
     digitalWrite(relay35, HIGH);
+    delay(delay_time);
     digitalWrite(relay45, LOW);
   }
   else if (user_in == 3) {
     digitalWrite(relay25, relay25_val);
+    delay(delay_time);
     digitalWrite(relay35, LOW);
+    delay(delay_time);
     digitalWrite(relay45, HIGH);
   }
   else if (user_in == 4) {
     digitalWrite(relay25, (relay25_val + 1));
+    delay(delay_time);
     digitalWrite(relay35, HIGH);
+    delay(delay_time);
     digitalWrite(relay45, LOW);
   }
   else if (user_in == 5) {
     digitalWrite(relay25, (relay25_val + 1));
+    delay(delay_time);
     digitalWrite(relay35, LOW);
+    delay(delay_time);
     digitalWrite(relay45, HIGH);
   }
   else if (user_in == 6) {
     digitalWrite(relay25, relay25_val);
+    delay(delay_time);
     digitalWrite(relay35, HIGH);
+    delay(delay_time);
     digitalWrite(relay45, HIGH);
   }
   else if (user_in == 7) {
     digitalWrite(relay25, (relay25_val + 1));
+    delay(delay_time);
     digitalWrite(relay35, HIGH);
+    delay(delay_time);
     digitalWrite(relay45, HIGH);
   }
 }
@@ -229,18 +231,6 @@ void get_trial_length() {
 }
 
 void read_handle_val() {
-  /*convert_force(analogRead(fsr_1)); Serial.print(" ");
-  convert_force(analogRead(fsr_2)); Serial.print(" ");
-  convert_force(analogRead(fsr_3)); Serial.print(" ");
-  convert_force(analogRead(fsr_4)); Serial.print(" ");
-  convert_force(analogRead(fsr_5)); Serial.print(" ");
-  convert_force(analogRead(fsr_6)); Serial.print(" ");
-  convert_force(analogRead(fsr_7)); Serial.print(" ");
-  convert_force(analogRead(fsr_8)); Serial.print(" ");
-  convert_force(analogRead(fsr_9)); Serial.print(" ");
-  convert_force(analogRead(fsr_10)); Serial.print(" ");
-  convert_force(analogRead(fsr_11)); Serial.print(" ");
-  convert_force(analogRead(fsr_12)); Serial.print(" ");*/
   Serial.println(analogRead(fsr_1));
   Serial.println(analogRead(fsr_2));
   Serial.println(analogRead(fsr_3));
@@ -255,17 +245,6 @@ void read_handle_val() {
   Serial.println(analogRead(fsr_12));
 }
 
-/*void read_pull_force() {
-  convert_force(analogRead(fsr_13));
-  Serial.print("\t");
-  convert_force(analogRead(fsr_14));
-  Serial.print("\t");
-  convert_force(analogRead(fsr_15));
-  Serial.print("\t");
-  convert_force(analogRead(fsr_16));
-  Serial.print("\t");
-}*/
-
 void read_TOF_val() {
   VL53L0X_RangingMeasurementData_t measure; //value from tof sensor. pointer
   tof.rangingTest(&measure, false);
@@ -276,36 +255,3 @@ void read_TOF_val() {
   Serial.println(door_angle);
   //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
 }
-
-/*void convert_force(int reading){
-  float voltage;
-  float resistance;
-  float conductance;
-  float force;
-  int resistor = 10000; //we use a 10k resistor in the voltage divider circuit
-  int Vcc = 5000; //in mV, we used 5v
-  voltage = map(reading, 0, 1023, 0, Vcc); //re-maps voltage val to fsr reading range. 1023 is FSR max output when using 10k resistor and 5v
-  //voltage = long(reading * Vcc) / 616; 
-  if(voltage == 0){
-    Serial.print(0); //no force
-  }
-  else{
-    //fsr = ((Vcc - v) * R) / v
-    resistance = Vcc -  voltage;
-    resistance *= resistor;
-    resistance /= voltage;
-
-    conductance = 100000; //in micro-Ohms
-    conductance /= resistance;
-    //the value of the FSR's is a parabola based on the force applied.
-    //this splits the parabola into two linear equations for linear approximation
-    if(conductance <= 1000){
-      force = conductance / 80;
-    }
-    else{
-      force = conductance - 1000;
-      force /= 30;
-    }
-    Serial.print(force);
-  }
-}*/
