@@ -18,7 +18,7 @@
 
 // Initialize FSR and Potentiometer in door frame
 #define fsr_13 A0
-#define fsr_14 A2
+#define fsr_14 A3
 #define fsr_1 A7
 #define fsr_2 A15
 #define fsr_3 A10
