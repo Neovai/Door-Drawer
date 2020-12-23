@@ -17,9 +17,7 @@
 
 // Initialize FSR and Potentiometer in door frame
 #define fsr_13 A0
-#define fsr_14 A1
-#define fsr_15 A2
-#define fsr_16 A3
+#define fsr_14 A3
 #define fsr_1 A7 //A7
 #define fsr_2 A15 //A15
 #define fsr_3 A10 //A10
@@ -243,6 +241,11 @@ void read_handle_val() {
   Serial.println(analogRead(fsr_10));
   Serial.println(analogRead(fsr_11));
   Serial.println(analogRead(fsr_12));
+}
+
+void read_pull_force(){
+  Serial.println(analogRead(fsr_13));
+  Serial.println(analogRead(fsr_14));
 }
 
 void read_TOF_val() {
