@@ -2,8 +2,8 @@
 
 // Include the necessary libraries
 #include "math.h" //Includes math library
-#include <Adafruit_MCP3008.h> //Includes library for SPI communications
 #include "Adafruit_VL53L0X.h" //library for time of fligh sensor (tof)
+#include <Wire.h>
 
 //define pins for motor controller
 #define enable_motor_channel 6 //pwm pin
@@ -31,9 +31,8 @@
 #define fsr_11 A9 //A9
 #define fsr_12 A11 //A11
 
-// Initialize the SPI devices
-Adafruit_MCP3008 adc1; //SPI 1
-Adafruit_MCP3008 adc2; //SPI 2
+//opto relays
+char angle = 0;
 
 //tof sensor
 Adafruit_VL53L0X tof = Adafruit_VL53L0X();
@@ -51,8 +50,9 @@ const int time_unwind = 2000; // in ms
 
 void setup() {
   // Initialize the Serial monitor
+  Wire.begin();
   Serial.begin(115200);
-  while (!Serial){
+  while (!Serial) {
     ;
   }
   //don't run door if TOF is not working
@@ -60,10 +60,6 @@ void setup() {
     Serial.println(F("Failed to boot VL53L0X"));
     while (1);
   }
-
-  // Begins the SPI devices and declares the pins in order of (CLK, MOSI, MISO, CS)
-  adc1.begin(52, 51, 50, 53);
-  adc2.begin(9, 11, 10, 12);
   // initialize motor pins as outputs
   pinMode(motor_channel3, OUTPUT);
   pinMode(motor_channel4, OUTPUT);
@@ -87,15 +83,13 @@ void setup() {
   pinMode(fsr_12, INPUT);
   pinMode(fsr_13, INPUT);
   pinMode(fsr_14, INPUT);
-  pinMode(fsr_15, INPUT);
-  pinMode(fsr_16, INPUT);
 }
 
 void loop() {
   //Temporary Interface for Door testing purposes.
   get_magnet_val();
   get_trial_length();
-  
+
   Enable_Relays(magnet_input); // changes electromagnets based on input
   bool switched_off = false;
   bool switched_on = true;
@@ -243,7 +237,7 @@ void read_handle_val() {
   Serial.println(analogRead(fsr_12));
 }
 
-void read_pull_force(){
+void read_pull_force() {
   Serial.println(analogRead(fsr_13));
   Serial.println(analogRead(fsr_14));
 }
@@ -251,10 +245,16 @@ void read_pull_force(){
 void read_TOF_val() {
   VL53L0X_RangingMeasurementData_t measure; //value from tof sensor. pointer
   tof.rangingTest(&measure, false);
-  door_angle = calc_degree(measure.RangeMilliMeter); 
+  door_angle = calc_degree(measure.RangeMilliMeter);
   if (door_angle < 0) {
     door_angle = 0;
   }
   Serial.println(door_angle);
   //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
+}
+
+void read_angle() {
+  Wire.requestFrom(2, 1); //2 is i2c address of slave, 1 is # of bytes requested
+  angle = Wire.read(); //reads one byte sent over (only asking for one)
+  Serial.println(angle);
 }

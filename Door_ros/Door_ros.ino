@@ -133,7 +133,6 @@ void loop() {
     n.spinOnce();
     collect_data();
     //Turns off electromagnets when not being used.
-    //saves energy and reduces heat from electromagnets.
     //TODO: this needs a delay or else it switches too fast for mechanical relay to keep up
     /*if (door_angle > 15 && !switched_off) {
       Enable_Relays(0);
@@ -190,44 +189,61 @@ void Reset_Door() {
 
 void Enable_Relays(int user_in) {
   int relay25_val = 0;
+  int delay_time = 1; //1 works. Prevents arduino from losing connection
   if (user_in == 0) {
     digitalWrite(relay25, relay25_val);
+    delay(delay_time);
     digitalWrite(relay35, LOW);
+    delay(delay_time);
     digitalWrite(relay45, LOW);
   }
   else if (user_in == 1) {
     digitalWrite(relay25, (relay25_val + 1));
+    delay(delay_time);
     digitalWrite(relay35, LOW);
+    delay(delay_time);
     digitalWrite(relay45, LOW);
   }
   else if (user_in == 2) {
     digitalWrite(relay25, relay25_val);
+    delay(delay_time);
     digitalWrite(relay35, HIGH);
+    delay(delay_time);
     digitalWrite(relay45, LOW);
   }
   else if (user_in == 3) {
     digitalWrite(relay25, relay25_val);
+    delay(delay_time);
     digitalWrite(relay35, LOW);
+    delay(delay_time);
     digitalWrite(relay45, HIGH);
   }
   else if (user_in == 4) {
     digitalWrite(relay25, (relay25_val + 1));
+    delay(delay_time);
     digitalWrite(relay35, HIGH);
+    delay(delay_time);
     digitalWrite(relay45, LOW);
   }
   else if (user_in == 5) {
     digitalWrite(relay25, (relay25_val + 1));
+    delay(delay_time);
     digitalWrite(relay35, LOW);
+    delay(delay_time);
     digitalWrite(relay45, HIGH);
   }
   else if (user_in == 6) {
     digitalWrite(relay25, relay25_val);
+    delay(delay_time);
     digitalWrite(relay35, HIGH);
+    delay(delay_time);
     digitalWrite(relay45, HIGH);
   }
   else if (user_in == 7) {
     digitalWrite(relay25, (relay25_val + 1));
+    delay(delay_time);
     digitalWrite(relay35, HIGH);
+    delay(delay_time);
     digitalWrite(relay45, HIGH);
   }
 }
