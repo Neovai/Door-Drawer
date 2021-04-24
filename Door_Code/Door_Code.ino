@@ -2,8 +2,9 @@
 
 // Include the necessary libraries
 #include "math.h" //Includes math library
-#include "Adafruit_VL53L0X.h" //library for time of fligh sensor (tof)
+//#include "Adafruit_VL53L0X.h" //library for time of flight sensor (tof)
 #include <Wire.h>
+#include <AS5047P.h>
 
 //define pins for motor controller
 #define enable_motor_channel 6 //pwm pin
@@ -18,24 +19,30 @@
 // Initialize FSR and Potentiometer in door frame
 #define fsr_13 A0
 #define fsr_14 A3
-#define fsr_1 A7 //A7
-#define fsr_2 A15 //A15
-#define fsr_3 A10 //A10
-#define fsr_4 A4 //A4
-#define fsr_5 A12 //A12
-#define fsr_6 A5 //TBA
-#define fsr_7 A6 //TBA
-#define fsr_8 A13 //TBA
-#define fsr_9 A8 //A8
-#define fsr_10 A14 //A14
-#define fsr_11 A9 //A9
-#define fsr_12 A11 //A11
+#define fsr_1 A7 
+#define fsr_2 A15 
+#define fsr_3 A10
+#define fsr_4 A4
+#define fsr_5 A12
+#define fsr_6 A5
+#define fsr_7 A6
+#define fsr_8 A13
+#define fsr_9 A8
+#define fsr_10 A14 
+#define fsr_11 A9 
+#define fsr_12 A11 
 
-//opto relays
-char angle = 0;
+//define slave signal pin for as5047p
+#define slave_port 9
 
-//tof sensor
+//defines custom spi bus speed for as5047p (Hz). Max is 10000000Hz (10MHz)
+#define bus_speed 100000 //1MHz
+
+/*tof sensor object
 Adafruit_VL53L0X tof = Adafruit_VL53L0X();
+*/
+//AS5047P sensor object
+AS5047P as5047p(slave_port, bus_speed);
 float door_angle;
 
 // Initialize user input variables
@@ -56,9 +63,15 @@ void setup() {
     ;
   }
   //don't run door if TOF is not working
-  if (!tof.begin()) {
+  /*if (!tof.begin()) {
     Serial.println(F("Failed to boot VL53L0X"));
     while (1);
+  }*/
+  if (!as5047p.initSPI()){
+    Serial.println("as5047p (magnetic potentiometer) failed to connect");
+    while (!as5047p.initSPI()){
+      ;
+    }
   }
   // initialize motor pins as outputs
   pinMode(motor_channel3, OUTPUT);
@@ -96,7 +109,8 @@ void loop() {
   time = millis();
   stoptime = time + (time_input * 1000); // converts time_input to seconds
   while (time < stoptime) {
-    read_TOF_val();
+    //read_TOF_val();
+    read_angle();
     read_handle_val();
     read_pull_force();
     time = millis();
@@ -113,9 +127,10 @@ void Reset_Door() {
   digitalWrite(motor_channel3, LOW);// turns motor
   digitalWrite(motor_channel4, HIGH); // counter clockwise
   while (true) { // door is open more than 5 degrees
-    VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
+    /*VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
     tof.rangingTest(&measure, false);
-    door_angle = calc_degree(measure.RangeMilliMeter);
+    door_angle = calc_degree(measure.RangeMilliMeter);*/
+    door_angle = as5047p.readAngleDegree();
     Serial.print("Angle of the door during closing: "); Serial.println(door_angle);
     if (door_angle < 1) {
       break;
@@ -242,7 +257,15 @@ void read_pull_force() {
   Serial.println(analogRead(fsr_14));
 }
 
-void read_TOF_val() {
+void read_angle() {
+  /*if (door_angle < 0) {
+    door_angle = 0;
+  }*/
+  door_angle = as5047p.readAngleDegree();
+  Serial.println(door_angle);
+}
+
+/*void read_TOF_val() {
   VL53L0X_RangingMeasurementData_t measure; //value from tof sensor. pointer
   tof.rangingTest(&measure, false);
   door_angle = calc_degree(measure.RangeMilliMeter);
@@ -251,10 +274,12 @@ void read_TOF_val() {
   }
   Serial.println(door_angle);
   //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
-}
+}*/
 
+/* For partial disk
 void read_angle() {
   Wire.requestFrom(2, 1); //2 is i2c address of slave, 1 is # of bytes requested
   angle = Wire.read(); //reads one byte sent over (only asking for one)
   Serial.println(angle);
 }
+*/

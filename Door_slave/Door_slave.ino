@@ -30,7 +30,7 @@ void loop() {
   if(digitalRead(angle_opto) != prev_angle){
     //depends on if dir opto starts on right edge or left edge of slot
     if(digitalRead(dir_opto) != prev_dir){ // door is opening
-      angle++;  
+      angle++;
     }
     else{ //door is closing
       angle--;
