@@ -1,9 +1,12 @@
 """
 Start by doing a 1:1 copy of the arduino version.
 Afterwards, look into threading w/ multiprocessing.dummy
+circuitPython NOT supported in python 2.x (for tof)
+Use this for 2.x: https://github.com/pimoroni/VL53L0X-python
 """
 import sys, platform, threading
 from time import sleep, time
+import spidev
 import RPi.GPIO as gpio
 print("hello")
 sleep(1)
@@ -25,7 +28,8 @@ gpio.setup(reset_dir, gpio.OUT)
 
 #function for controlling motors
 #direction: 0 = forward, 1 = reverse
-#time: ms??? - maybe
+#run_time: seconds
+#motor: 0 = reset motor, 1 = friction motor
 def move(motor, direction, run_time, speed = 0):
     #reset motor
     if(motor == 0):
@@ -37,9 +41,7 @@ def move(motor, direction, run_time, speed = 0):
 
     gpio.output(dir_pin, direction) #might have to use gpio.LOW
     timer = time() + run_time
-    #for t in range(time):
     while True:
-        sys.stdout.flush()
         gpio.output(pulse_pin, gpio.HIGH)
         sleep(speed)
         gpio.output(pulse_pin, gpio.LOW)
@@ -50,4 +52,4 @@ def move(motor, direction, run_time, speed = 0):
 
 #test motor function:
 move(reset_motor, 1, time_unwind, reset_speed)
-print("running at speed: %s" % reset_speed)
+print("ran at speed: %s" % reset_speed)
