@@ -7,7 +7,7 @@ Afterwards, look into threading w/ multiprocessing.dummy
 """
 import sys, platform, threading
 from time import sleep, time
-import spidev
+#import spidev
 import RPi.GPIO as gpio
 import VL53L0X
 
