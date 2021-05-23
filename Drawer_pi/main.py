@@ -2,6 +2,8 @@
 Start by doing a 1:1 copy of the arduino version.
 Afterwards, look into threading w/ multiprocessing.dummy
 
+5/22: move() function is working properly
+      TOF is working properly (need to test replication on another pi)
 """
 import sys, platform, threading
 from time import sleep, time
