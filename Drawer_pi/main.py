@@ -36,12 +36,8 @@ gpio.setup(reset_en, gpio.OUT)
 
 #function for controlling motors
 #direction: 0 = forward, 1 = reverse
-<<<<<<< HEAD
 #run_time: seconds. Enter 0 for runtime to do one pulse cycle
-=======
-#run_time: seconds
 #motor: 0 = reset motor, 1 = friction motor
->>>>>>> a6b68b341c1170cbcb68543df6e368aa2b712c15
 def move(motor, direction, run_time, speed = 0):
     #reset motor
     if(motor == 0):
@@ -66,7 +62,6 @@ def move(motor, direction, run_time, speed = 0):
     return
 
 #test motor function:
-<<<<<<< HEAD
 for i in range(0,1):
     print("direction 1")
     move(reset_motor, 1, time_unwind, reset_speed)
@@ -104,7 +99,3 @@ a = avg(sample_data)
 print(a)
 tof.stop_ranging()
 
-=======
-move(reset_motor, 1, time_unwind, reset_speed)
-print("ran at speed: %s" % reset_speed)
->>>>>>> a6b68b341c1170cbcb68543df6e368aa2b712c15
