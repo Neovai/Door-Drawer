@@ -6,6 +6,6 @@ Door_ros and Drawer_ros are the final versions of the code that is used for inte
 <p>add to syscfg.txt file in /boot/firmware directory: (use nano)</p>
 <ul>
   <li>dtoverlay=i2c0</li>
-  </li>dtoverlay=spi1-1cs</li>
+  <li>dtoverlay=spi1-1cs</li>
   </ul>
 <p>1cs refers to number of chip select pins activated for that bus (can be 2 or 3)</p>
