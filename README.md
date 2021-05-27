@@ -10,5 +10,5 @@ Door_ros and Drawer_ros are the final versions of the code that is used for inte
   </ul>
 <p>
 - 1cs refers to number of chip select pins activated for that bus (can be 2 or 3)
-- be sure to restart pi after saving changes
+<div>- be sure to restart pi after saving changes</div>
 </p>
