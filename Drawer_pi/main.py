@@ -8,6 +8,8 @@ Afterwards, look into threading w/ multiprocessing.dummy
 5/24: can read block from ADS1115. readADC() needs to be tested. Need to test how many SPI bus's are available
       (might need to use one bus and SS pins to enable each mcp3008)
       second I2C port does NOT work
+
+6/10: reset drawer works with i2c ADC and TOF. Friction moves correctly
 """
 import sys, platform, threading
 from time import sleep, time
@@ -16,38 +18,47 @@ from smbus2 import SMBus #used for i2c communication with ADS1115
 import RPi.GPIO as gpio
 import VL53L0X
 
-print("sleep works on: " + platform.python_version())
+print("python version: " + platform.python_version())
 
 gpio.setmode(gpio.BCM) #sets pin mapping to GPIO pins
 
 #spi setup for MCP3008's
 spi_lower = spidev.SpiDev()
-#(1,0) throws an error, SPI bus not activated? need to use only one bus?
-#spi_lower.open(1, 0) #bus for mcp3008 in charge of FSR's 1 - 7
-#spi_lower.max_speed_hz = 1000000
+spi_lower.open(1, 0) #bus for mcp3008 in charge of FSR's 1 - 7
+spi_lower.max_speed_hz = 1000000
 spi_upper = spidev.SpiDev() 
 spi_upper.open(0, 0)#bus for mcp3008 in charge of FSR's 8 - 12
 spi_upper.max_speed_hz = 1000000
 
 #TOF object/settings
 tof = VL53L0X.VL53L0X()
-acc_setting = 3 #good accuracy
 
 #reset motor settings/pins
 reset_motor = 0 #defines reset motor (for use with move() fxn)
-reset_pul = 17 #pin 11. 17/27 are the GPIO pin #
-reset_dir = 27 # pin 13 
-reset_en = 22  # pin 15, (High to Enable / LOW to Disable)
-time_unwind = 4 #in seconds
-reset_speed = .0000001 #time in between pulses to MC (in seconds). controls speed of motor
+reset_pul = 5 #pin 29
+reset_dir = 6 # pin 31 
+reset_en = 16  # pin 33, (High to Enable / LOW to Disable)
+time_unwind = 2 #in seconds
+reset_speed = .000001 #time in between pulses to MC (in seconds). controls speed of motor
+dis_buffer = 5 #buffer value for resetting drawer (in mm)
 
 #friction motor settings/pins
 #use GPIO 23,24,25 (pins 16,18,22) for control pins
+fric_motor = 1 #defines reset motor (for use with move() fxn)
+fric_pul = 17 #pin 11
+fric_dir = 27 # pin 13
+fric_en = 22  # pin 15 (High to Enable / LOW to Disable)
+fric_steps = .00032 #relation between friction to # of motor steps
+fric_speed = .000001 #time in between pulses to MC (in seconds). controls speed of motor
+fric_min_steps = 2500 #min steps it takes to get brake to touch drawer fin
 
 #set pins as output pins
 gpio.setup(reset_pul, gpio.OUT)
 gpio.setup(reset_dir, gpio.OUT)
 gpio.setup(reset_en, gpio.OUT)
+gpio.setup(fric_pul, gpio.OUT)
+gpio.setup(fric_dir, gpio.OUT)
+gpio.setup(fric_en, gpio.OUT)
 
 #function for controlling motors
 #direction: 0 = forward, 1 = reverse
@@ -60,9 +71,13 @@ def move(motor, direction, run_time, speed = 0):
         dir_pin = reset_dir
         en_pin = reset_en
     #friction motor
+    elif(motor == 1):
+        pulse_pin = fric_pul
+        dir_pin = fric_dir
+        en_pin = fric_en
     else:
-        pass #add friction motor here
-
+        return -1
+    print("pulse: {} -- dir: {} -- en: {} -- speed: {}".format(pulse_pin, dir_pin, en_pin, speed))
     gpio.output(dir_pin, direction) #works for now, alternative is gpio.LOW/HIGH
     gpio.output(en_pin, gpio.HIGH)
     timer = time() + run_time
@@ -77,73 +92,113 @@ def move(motor, direction, run_time, speed = 0):
     return
 
 #NEEDS TESTING
-#returns single channel value for an ADC
-# @param chan = channel number on ADC (0 - 7)
-# @param dev = spiDev() object
-def readADC(chan, dev):
-    #only 8 channels on MCP3008
-    if(chan > 7 or chan < 0):
-        return -1
-    r = dev.xfer2([1, 8 + chan << 4, 0])
-    data = ((r[1] & 3) << 8) + r[2]
+#returns array of all fsr values (MCP3008)
+def readHandle():
+    data = [-1] * 14 #last two are placeholders for drawer
+    #lower ADC
+    for chan in range(0,8):
+        r = spi_lower.xfer2([1, 8 + chan << 4, 0])
+        data[chan] = ((r[1] & 3) << 8) + r[2]
+    #upper ADC
+    for chan in range(0,4):
+        r = spi_upper.xfer2([1, 8 + chan << 4, 0])
+        data[chan + 8] = ((r[1] & 3) << 8) + r[2]
     return data
 
 #NEEDS TESTING
-def resetDrawer(start_pos):
-    bool did_move = False
+def resetDrawer(start_pos, acc_setting):
+    did_move = False
     tof.start_ranging(acc_setting)
+    print("Resetting Drawer...")
     while (True):
-        if(tof.get_distance() <= start_pos):
+        if(tof.get_distance() <= (start_pos + dis_buffer)):
             break
         did_move = True
-        move(reset_motor, 1, 0, reset_speed)
+        move(reset_motor, 1, 0.1, reset_speed)
     
     if(did_move):
+        print("Unwinding Motor...")
         move(reset_motor, 0, time_unwind, reset_speed)
     
     tof.stop_ranging()
     return
 
 #test motor function:
-for i in range(0,1):
-    print("direction 1")
-    move(reset_motor, 1, time_unwind, reset_speed)
-    sleep(.5)
-    print ("direction 0")
-    move(reset_motor, 0, time_unwind, reset_speed)
-    sleep(.5)
-gpio.cleanup()
+try: 
+    for i in range(0,1):
+        print("direction 1")
+        move(fric_motor, 1, 1, fric_speed)
+        sleep(1)
+        print ("direction 0")
+        move(fric_motor, 0, 1, fric_speed)
+        sleep(1)
+    for i in range(0,1):
+        print("direction 1")
+        move(reset_motor, 1, time_unwind, reset_speed)
+        sleep(1)
+        print ("direction 0")
+        move(reset_motor, 0, time_unwind, reset_speed)
+        sleep(1)
+except KeyboardInterrupt:
+    pass
 
 
 #TOF testing
-sample_data = [0] * 100;
+#sample_data = [0] * 100;
 
-def avg(data):
-    return sum(data) / len(data)
+#def avg(data):
+#    return sum(data) / len(data)
 
 # Create a VL53L0X object
-tof = VL53L0X.VL53L0X()
+#tof = VL53L0X.VL53L0X()
 
 # Start ranging
 #tof.start_ranging(1) # better acc. mode
 #tof.start_ranging(2) # best acc. mode
 #tof.start_ranging(0) #good acc. mode
-tof.start_ranging(3) #long range mode
+#tof.start_ranging(3) #long range mode
 #tof.start_ranging(4) # high speed mode
 
-for i in range(0, len(sample_data)):
-    sample_data[i] = tof.get_distance()
+#for i in range(0, len(sample_data)):
+#    sample_data[i] = tof.get_distance()
 
-print("min range value: %d" % (min(sample_data)))
-print("max range value: %d" % (max(sample_data)))
-a = avg(sample_data)
-print(a)
-tof.stop_ranging()
+#print("min range value: %d" % (min(sample_data)))
+#print("max range value: %d" % (max(sample_data)))
+#a = avg(sample_data)
+#print(a)
+#tof.stop_ranging()
 
 #ADC (ADS1115) testing
-#reads 4 bytes. Works? -> returns array of values of 0/255
-#with SMBus(1) as bus: #opens bus 1
-    #bus.pec = 1 #enables error checking for packet
-    #block = bus.read_i2c_block_data(0x48, 0, 4) #address 0x48, offset 0, 4 bytes
-    #print(block)
-#automatically closes smbus
+def pseudoHandle():
+    #reads 4 bytes.
+    with SMBus(2) as bus: #opens bus 2
+        bus.pec = 1 #enables error checking for packet
+        data = [-1] * 12
+        for i in range(0, 12):
+            fsr = bus.read_i2c_block_data(0x48, 0, 1) #address 0x48, offset 0, 1 byte
+            data[i] = fsr[0]
+        #print(data)
+    #automatically closes smbus
+    return data
+
+#main
+while True:
+    trial_time = int(raw_input("Trial Time (seconds, -1 to quit): "))
+    if(trial_time == -1):
+        break
+    tof_mode = int(raw_input("TOF mode (0 - 4): "))
+    timer = time() + trial_time
+    tof.start_ranging(tof_mode)
+    start_pos = tof.get_distance() #gets initial distance of drawer. Used for reset
+    while(time() < timer):
+        #collect data
+        distance = tof.get_distance() - start_pos #tof data point
+        handle = pseudoHandle() #fsr's data point
+        print("{} --- {} --- {}".format(distance, handle, time()))
+
+    #reset drawer
+    tof.stop_ranging()
+    resetDrawer(start_pos, tof_mode)
+
+#cleanup GPIO pins
+gpio.cleanup()
