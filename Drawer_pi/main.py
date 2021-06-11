@@ -9,7 +9,7 @@ Afterwards, look into threading w/ multiprocessing.dummy
       (might need to use one bus and SS pins to enable each mcp3008)
       second I2C port does NOT work
 
-6/10: reset drawer works with i2c ADC and TOF. Friction moves correctly
+6/10: reset drawer works with i2c ADC and TOF. setFriction and resetFricion function properly
 """
 import sys, platform, threading
 from time import sleep, time
@@ -43,7 +43,6 @@ reset_speed = .000001 #time in between pulses to MC (in seconds). controls speed
 dis_buffer = 5 #buffer value for resetting drawer (in mm)
 
 #friction motor settings/pins
-#use GPIO 23,24,25 (pins 16,18,22) for control pins
 fric_motor = 1 #defines reset motor (for use with move() fxn)
 fric_pul = 17 #pin 11
 fric_dir = 27 # pin 13
@@ -51,6 +50,7 @@ fric_en = 22  # pin 15 (High to Enable / LOW to Disable)
 fric_steps = .00032 #relation between friction to # of motor steps
 fric_speed = .000001 #time in between pulses to MC (in seconds). controls speed of motor
 fric_min_steps = 2500 #min steps it takes to get brake to touch drawer fin
+base_friction = 0.3 #minimum resistance drawer has (in kg)
 
 #set pins as output pins
 gpio.setup(reset_pul, gpio.OUT)
@@ -77,8 +77,8 @@ def move(motor, direction, run_time, speed = 0):
         en_pin = fric_en
     else:
         return -1
-    print("pulse: {} -- dir: {} -- en: {} -- speed: {}".format(pulse_pin, dir_pin, en_pin, speed))
-    gpio.output(dir_pin, direction) #works for now, alternative is gpio.LOW/HIGH
+    #print("pulse: {} -- dir: {} -- en: {} -- speed: {}".format(pulse_pin, dir_pin, en_pin, speed))
+    gpio.output(dir_pin, direction)
     gpio.output(en_pin, gpio.HIGH)
     timer = time() + run_time
     while True:
@@ -105,7 +105,6 @@ def readHandle():
         data[chan + 8] = ((r[1] & 3) << 8) + r[2]
     return data
 
-#NEEDS TESTING
 def resetDrawer(start_pos, acc_setting):
     did_move = False
     tof.start_ranging(acc_setting)
@@ -123,24 +122,37 @@ def resetDrawer(start_pos, acc_setting):
     tof.stop_ranging()
     return
 
+#works mechanically. Test actual resistance accuracy
+def setFriction(resistance = .3):
+    num_steps = ((resistance - base_friction) / fric_steps) + fric_min_steps
+    print(num_steps)
+    for steps in range(1, int(num_steps)):
+        move(fric_motor, 0, 0, fric_speed)
+    gpio.output(fric_en, gpio.HIGH) #keep motor resistance on
+    return int(num_steps)
+
+def resetFriction(num_steps):
+    for steps in range(1, num_steps):
+        move(fric_motor, 1, 0, fric_speed)
+
 #test motor function:
-try: 
-    for i in range(0,1):
-        print("direction 1")
-        move(fric_motor, 1, 1, fric_speed)
-        sleep(1)
-        print ("direction 0")
-        move(fric_motor, 0, 1, fric_speed)
-        sleep(1)
-    for i in range(0,1):
-        print("direction 1")
-        move(reset_motor, 1, time_unwind, reset_speed)
-        sleep(1)
-        print ("direction 0")
-        move(reset_motor, 0, time_unwind, reset_speed)
-        sleep(1)
-except KeyboardInterrupt:
-    pass
+#try: 
+#    for i in range(0,1):
+#        print("direction 1")
+#        move(fric_motor, 1, 1, fric_speed)
+#        sleep(1)
+#        print ("direction 0")
+#        move(fric_motor, 0, 1, fric_speed)
+#        sleep(1)
+#    for i in range(0,1):
+#        print("direction 1")
+#        move(reset_motor, 1, time_unwind, reset_speed)
+#        sleep(1)
+#        print ("direction 0")
+#        move(reset_motor, 0, time_unwind, reset_speed)
+#        sleep(1)
+#except KeyboardInterrupt:
+#    pass
 
 
 #TOF testing
@@ -187,6 +199,8 @@ while True:
     if(trial_time == -1):
         break
     tof_mode = int(raw_input("TOF mode (0 - 4): "))
+    resistance = float(raw_input("Friction Resistance (kg): "))
+    fric_num_steps = setFriction(resistance)
     timer = time() + trial_time
     tof.start_ranging(tof_mode)
     start_pos = tof.get_distance() #gets initial distance of drawer. Used for reset
@@ -197,6 +211,7 @@ while True:
         print("{} --- {} --- {}".format(distance, handle, time()))
 
     #reset drawer
+    resetFriction(fric_num_steps)
     tof.stop_ranging()
     resetDrawer(start_pos, tof_mode)
 
