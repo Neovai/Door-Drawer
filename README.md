@@ -5,7 +5,7 @@ Door_ros and Drawer_ros are the final versions of the code that is used for inte
 <h3>Drawer_pi Firmware Changes:</h3>
 <p>add to <b>syscfg.txt</b> file in <b>/boot/firmware</b> directory: <i>(use nano)</i></p>
 <ul>
-  <li>dtoverlay=i2c-gpio,bus=2,i2c_gpio_sda=17,i2c_gpio_scl=27 (GPIO pins 17,27. can be switched with any pin #'s)</li>
+  <li>dtoverlay=i2c-gpio,bus=2,i2c_gpio_sda=23,i2c_gpio_scl=24 (GPIO pins 23,24. can be switched with any pin #'s)</li>
   <li>dtoverlay=spi1-1cs  (1cs refers to number of chip select pins activated for that bus. Can be 2 or 3)</li>
   </ul>
 <p>
