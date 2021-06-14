@@ -13,14 +13,18 @@ Afterwards, look into threading w/ multiprocessing.dummy
 """
 import sys, platform, threading
 from time import sleep, time
-import spidev #used for mcp3008
-from smbus2 import SMBus #used for i2c communication with ADS1115
-import RPi.GPIO as gpio
-from helpers.VL53L0X import *
+#import spidev #used for mcp3008
+#from smbus2 import SMBus #used for i2c communication with ADS1115
+#import RPi.GPIO as gpio
+import VL53L0X
 from helpers.drawer_functions import *
+#from helpers.drawer_functions import *
 
 print("python version: " + platform.python_version())
 
+#TOF object/settings
+tof = VL53L0X.VL53L0X()
+"""
 gpio.setmode(gpio.BCM) #sets pin mapping to GPIO pins
 
 #spi setup for MCP3008's
@@ -31,8 +35,6 @@ spi_upper = spidev.SpiDev()
 spi_upper.open(0, 0)#bus for mcp3008 in charge of FSR's 8 - 12
 spi_upper.max_speed_hz = 1000000
 
-#TOF object/settings
-tof = VL53L0X.VL53L0X()
 
 #reset motor settings/pins
 reset_motor = 0 #defines reset motor (for use with move() fxn)
@@ -194,28 +196,30 @@ def pseudoHandle():
         #print(data)
     #automatically closes smbus
     return data
+"""
+def main():
+    while True:
+        trial_time = int(raw_input("Trial Time (seconds, -1 to quit): "))
+        if(trial_time == -1):
+            break
+        tof_mode = int(raw_input("TOF mode (0 - 4): "))
+        resistance = float(raw_input("Friction Resistance (kg): "))
+        fric_num_steps = setFriction(resistance)
+        timer = time() + trial_time
+        tof.start_ranging(tof_mode)
+        start_pos = tof.get_distance() #gets initial distance of drawer. Used for reset
+        while(time() < timer):
+            #collect data
+            distance = tof.get_distance() - start_pos #tof data point
+            handle = pseudoHandle() #fsr's data point
+            print("{} --- {} --- {}".format(distance, handle, time()))
+        #reset drawer
+        resetFriction(fric_num_steps)
+        tof.stop_ranging()
+        resetDrawer(start_pos, tof_mode, tof)
+    #cleanup GPIO pins
+    gpio.cleanup()
+    return
 
-#main
-while True:
-    trial_time = int(raw_input("Trial Time (seconds, -1 to quit): "))
-    if(trial_time == -1):
-        break
-    tof_mode = int(raw_input("TOF mode (0 - 4): "))
-    resistance = float(raw_input("Friction Resistance (kg): "))
-    fric_num_steps = setFriction(resistance)
-    timer = time() + trial_time
-    tof.start_ranging(tof_mode)
-    start_pos = tof.get_distance() #gets initial distance of drawer. Used for reset
-    while(time() < timer):
-        #collect data
-        distance = tof.get_distance() - start_pos #tof data point
-        handle = pseudoHandle() #fsr's data point
-        print("{} --- {} --- {}".format(distance, handle, time()))
-
-    #reset drawer
-    resetFriction(fric_num_steps)
-    tof.stop_ranging()
-    resetDrawer(start_pos, tof_mode)
-
-#cleanup GPIO pins
-gpio.cleanup()
+if __name__ == "__main__":
+    main()
