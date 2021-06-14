@@ -16,7 +16,8 @@ from time import sleep, time
 import spidev #used for mcp3008
 from smbus2 import SMBus #used for i2c communication with ADS1115
 import RPi.GPIO as gpio
-import VL53L0X
+from helpers.VL53L0X import *
+from helpers.drawer_functions import *
 
 print("python version: " + platform.python_version())
 
@@ -124,12 +125,13 @@ def resetDrawer(start_pos, acc_setting):
 
 #works mechanically. Test actual resistance accuracy
 def setFriction(resistance = .3):
-    num_steps = ((resistance - base_friction) / fric_steps) + fric_min_steps
+    num_steps = int(((resistance - base_friction) / fric_steps)
+            + fric_min_steps)
     print(num_steps)
-    for steps in range(1, int(num_steps)):
+    for steps in range(1, num_steps):
         move(fric_motor, 0, 0, fric_speed)
     gpio.output(fric_en, gpio.HIGH) #keep motor resistance on
-    return int(num_steps)
+    return num_steps
 
 def resetFriction(num_steps):
     for steps in range(1, num_steps):
