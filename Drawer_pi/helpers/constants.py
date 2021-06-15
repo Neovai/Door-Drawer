@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 #reset motor settings/pins
 reset_motor = 0 #defines reset motor (for use with move() fxn)
 reset_pul = 5 #pin 29

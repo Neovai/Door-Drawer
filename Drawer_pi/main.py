@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Start by doing a 1:1 copy of the arduino version.
 Afterwards, look into threading w/ multiprocessing.dummy

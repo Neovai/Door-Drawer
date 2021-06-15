@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from constants import *
 from time import sleep, time
 import spidev #used for mcp3008
