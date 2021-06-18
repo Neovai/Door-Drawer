@@ -39,11 +39,14 @@ def main():
         timer = time() + trial_time
         tof.start_ranging(tof_mode)
         start_pos = tof.get_distance() #gets initial distance of drawer. Used for reset
-        while(time() < timer):
-            #collect data
-            distance = tof.get_distance() - start_pos #tof data point
-            handle = pseudoHandle() #fsr's data point
-            print("{} --- {} --- {}".format(distance, handle, time()))
+        try:
+            while(time() < timer):
+                #collect data
+                distance = tof.get_distance() - start_pos #tof data point
+                handle = readHandle()#pseudoHandle() #fsr's data point
+                print("{} --- {} --- {}".format(distance, handle, time()))
+        except KeyboardInterrupt:
+            pass
         #reset drawer
         resetFriction(fric_num_steps)
         tof.stop_ranging()

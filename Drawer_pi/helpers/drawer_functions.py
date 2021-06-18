@@ -10,9 +10,10 @@ gpio.setmode(gpio.BCM) #sets pin mapping to GPIO pins
 
 #spi setup for MCP3008's
 spi_lower = spidev.SpiDev()
-spi_lower.open(1, 0) #bus for mcp3008 in charge of FSR's 1 - 7
+#spi_lower.open(1, 0) #seperate bus, can be used for multiprocessing
+spi_lower.open(0, 1) #same bus, synchronous
 spi_lower.max_speed_hz = 1000000
-spi_upper = spidev.SpiDev() 
+spi_upper = spidev.SpiDev()
 spi_upper.open(0, 0)#bus for mcp3008 in charge of FSR's 8 - 12
 spi_upper.max_speed_hz = 1000000
 
@@ -59,15 +60,16 @@ def move(motor, direction, run_time, speed = 0):
 #NEEDS TESTING
 #returns array of all fsr values (MCP3008)
 def readHandle():
-    data = [-1] * 14 #last two are placeholders for drawer
+    data = [-1] * 14
     #lower ADC
     for chan in range(0,8):
         r = spi_lower.xfer2([1, 8 + chan << 4, 0])
-        data[chan] = ((r[1] & 3) << 8) + r[2]
+        data[chan] = int(((r[1] & 3) << 8) + r[2])
+    #spidev automatically switches CS signals
     #upper ADC
     for chan in range(0,4):
         r = spi_upper.xfer2([1, 8 + chan << 4, 0])
-        data[chan + 8] = ((r[1] & 3) << 8) + r[2]
+        data[chan + 8] = int(((r[1] & 3) << 8) + r[2])
     return data
 
 def resetDrawer(start_pos, acc_setting, tof):
@@ -100,14 +102,14 @@ def resetFriction(num_steps):
     for steps in range(1, num_steps):
         move(fric_motor, 1, 0, fric_speed)
 
-def pseudoHandle():
-    #reads 4 bytes.
-    with SMBus(2) as bus: #opens bus 2
-        bus.pec = 1 #enables error checking for packet
-        data = [-1] * 12
-        for i in range(0, 12):
-            fsr = bus.read_i2c_block_data(0x48, 0, 1) #address 0x48, offset 0, 1 byte
-            data[i] = fsr[0]
+#def pseudoHandle():
+#    #reads 4 bytes.
+#    with SMBus(2) as bus: #opens bus 2
+#        bus.pec = 1 #enables error checking for packet
+#        data = [-1] * 12
+#        for i in range(0, 12):
+#            fsr = bus.read_i2c_block_data(0x48, 0, 1) #address 0x48, offset 0, 1 byte
+#            data[i] = fsr[0]
         #print(data)
     #automatically closes smbus
-    return data
+#    return data

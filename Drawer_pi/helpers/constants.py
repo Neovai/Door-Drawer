@@ -10,7 +10,7 @@ reset_speed = .000001 #time in between pulses to MC (in seconds). controls speed
 dis_buffer = 5 #buffer value for resetting drawer (in mm)
 
 #friction motor settings/pins
-fric_motor = 1 #defines reset motor (for use with move() fxn)
+fric_motor = 1 #defines friction motor (for use with move() fxn)
 fric_pul = 17 #pin 11
 fric_dir = 27 # pin 13
 fric_en = 22  # pin 15 (High to Enable / LOW to Disable)
