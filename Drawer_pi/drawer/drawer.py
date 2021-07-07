@@ -147,7 +147,6 @@ class Drawer:
       did_move = True
       self.reset_motor.move_for(0.1, self.reset_motor.CCW)
     if(did_move):
-      print("undo?")
       self.reset_motor.move_for(self.time_unwind, self.reset_motor.CW)
     self.tof.stop_ranging()
     

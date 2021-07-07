@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 from time import time, sleep
 import RPi.GPIO as gpio
+import numpy as np
 
 #TODO:
-# add attribute that asks what kind of stepping there is to record actual step counts
-# add set_zero function that sets current_steps to 0
-# add raise errors instead of print,return. Add more as well
+# add resolution parameter (pulse/rev) to do movements given angles
 
 class StepperMotor:
   """
@@ -58,6 +57,8 @@ class StepperMotor:
       GPIO pin number for direction pin of stepper motor controller
     en_pin : int
       GPIO pin number for enable pin of stepper motor controller
+    resolution : int
+      pulse/rev value of motor
     default_speed : float, optional
       delay between pulses in seconds / 2 (default .000001)
     """
@@ -69,11 +70,25 @@ class StepperMotor:
       self.dir_pin = int(dir_pin)
       self.en_pin = int(en_pin)
     except ValueError:
-      print("Invalid pin assignments")
+      print("Invalid pin values")
+      return
+    except Exception as e:
+      print(e)
+      return
+    except:
+      print("Unknown error during pin assignments")
+      return
     try:
       self.default_speed = float(default_speed)
     except ValueError:
-      print("Invalid default speed")
+      print("Invalid speed value")
+      return
+    except Exception as e:
+      print(e)
+      return
+    except:
+      print("Unknown error during speed assignment")
+      return
     self.__current_steps = 0
   
   def move_for(self, run_time, direction, speed = None):
@@ -99,24 +114,41 @@ class StepperMotor:
     
     if(speed == None):
       speed = self.default_speed
-    gpio.output(self.dir_pin, direction)
-    gpio.output(self.en_pin, gpio.HIGH)
+    try:
+      gpio.output(self.dir_pin, direction)
+      gpio.output(self.en_pin, gpio.HIGH)
+    except Exception as e:
+      print("Motor pins not configured properly. Error: {}".format(e))
+      return
+    except:
+      print("Unknown error during controlling motor pins")
+      return
     inc = 0
     if(direction==self.CW):
       inc = 1
     elif(direction==self.CCW):
       inc = -1
     else:
-      print("Invalid direction")
-      return -1
+      raise Exception("Invalid direction. Direction does not match CW or CCW direction of motor")
+      return
     timer = time() + run_time
-    while(time() <= timer):
-      gpio.output(self.pulse_pin, gpio.HIGH)
-      sleep(speed)
-      gpio.output(self.pulse_pin, gpio.LOW)
-      sleep(speed)
-      self.__current_steps += inc
-    gpio.output(self.en_pin, gpio.LOW)
+    try:
+      while(time() <= timer):
+        gpio.output(self.pulse_pin, gpio.HIGH)
+        sleep(speed)
+        gpio.output(self.pulse_pin, gpio.LOW)
+        sleep(speed)
+        self.__current_steps += inc
+      gpio.output(self.en_pin, gpio.LOW)
+    except ValueError:
+      print("Invalid speed value")
+      return
+    except Exception as e:
+      print(e)
+      return
+    except:
+      print("Unknown error during motor stepping")
+      return
   
   def step(self, num_steps, direction, speed = None):
     """
@@ -139,21 +171,48 @@ class StepperMotor:
     
     if(speed == None):
       speed = self.default_speed
-    gpio.output(self.dir_pin, direction)
-    gpio.output(self.en_pin, gpio.HIGH)
-    if(direction==self.CW):
-      self.__current_steps += num_steps
-    elif(direction==self.CCW):
-      self.__current_steps -= num_steps
-    else:
-      print("Invalid direction")
-      return -1
-    for steps in range(num_steps):
-      gpio.output(self.pulse_pin, gpio.HIGH)
-      sleep(speed)
-      gpio.output(self.pulse_pin, gpio.LOW)
-      sleep(speed)
-    gpio.output(self.en_pin, gpio.LOW)
+    try:
+      gpio.output(self.dir_pin, direction)
+      gpio.output(self.en_pin, gpio.HIGH)
+    except Exception as e:
+      print("Motor pins not configured properly. Error: {}".format(e))
+      print
+    except:
+      print("Unknown error during controlling motor pins")
+      return
+    try:
+      if(direction==self.CW):
+        self.__current_steps += int(num_steps)
+      elif(direction==self.CCW):
+        self.__current_steps -= int(num_steps)
+      else:
+        raise Exception("Invalid direction. Direction does not match CW or CCW direction of motor")
+        return
+    except ValueError:
+      print("invalid num_steps assignment")
+      return
+    except Exception as e:
+      print(e)
+      return
+    except:
+      print("Unknown error during adding num_steps to current steps of motor")
+      return  
+    try:
+      for steps in range(int(num_steps)):
+        gpio.output(self.pulse_pin, gpio.HIGH)
+        sleep(speed)
+        gpio.output(self.pulse_pin, gpio.LOW)
+        sleep(speed)
+      gpio.output(self.en_pin, gpio.LOW)
+    except ValueError:
+      print("Invalid speed value")
+      return
+    except Exception as e:
+      print(e)
+      return
+    except:
+      print("Unknown error during motor stepping")
+      return   
     
   def step_to(self, step_target, speed = None):
     """
@@ -165,10 +224,6 @@ class StepperMotor:
       target step position to move motor to
     speed : float, optional
       delay between pulses in seconds / 2 (default default_speed)
-      
-    Raises
-    ------
-    ADD HERE
       
     Returns
     -------
@@ -186,6 +241,13 @@ class StepperMotor:
       self.__current_steps = step_target
     except ValueError:
       print("Invalid step target")
+      return
+    except Exception as e:
+      print(e)
+      return
+    except:
+      print("Unknown error")
+      return
   
   def get_current_steps(self):
     """
@@ -203,4 +265,70 @@ class StepperMotor:
     """
     
     return self.__current_steps
+  
+  def override_position(self, step_value):
+    """
+    ovverides the current step value of motor.
+    NOTE: motor does not move to new step value. Use
+    the step_to() method to move motor to a absolute step
+    position.
+    
+    Parameters
+    ----------
+    step_value : int
+      new value of the current step position of motor
+      
+    Returns
+    -------
+    None
+    """
+    
+    try:
+      self.__current_steps = int(step_value)
+    except ValueError:
+      print("Invalid new step position")
+
+  def override_enable(self):
+    """
+    force enables motor. This should NOT be used to
+    control motor movement. Enabling/disabling of motors is handled
+    internally by move methods
+    
+    Parameters
+    ----------
+    NONE
+      
+    Returns
+    -------
+    None
+    """
+    try:
+      gpio.output(self.en_pin, gpio.HIGH)
+    except Exception as e:
+      print("Motor pins not configured properly. Error: {}".format(e))
+    except:
+      print("Unknown error during enabling motor")
+    
+  def override_disable(self):
+    """
+    force disables motor. This should NOT be used to
+    control motor movement. Enabling/disabling of motor is handled
+    internally by move methods
+    
+    Parameters
+    ----------
+    NONE
+      
+    Returns
+    -------
+    None
+    """
+    
+    try:
+      gpio.output(self.en_pin, gpio.LOW)
+    except Exception as e:
+      print("Motor pins not configured properly. Error: {}".format(e))
+    except:
+      print("Unknown error during enabling motor")
+    
     

@@ -55,23 +55,24 @@ if __name__ == "__main__":
 #        tof_mode = int(raw_input("TOF mode (0 - 4): "))
 #        resistance = float(raw_input("Friction Resistance (kg): "))
 #        fric_num_steps = setFriction(resistance)
-#        timer = time() + trial_time
 #        tof.start_ranging(tof_mode)
 #        start_pos = tof.get_distance() #gets initial distance of drawer. Used for reset
+#        print("start position: {}".format(start_pos))
+#        timer = time() + trial_time
 #        try:
 #            while(time() < timer):
 #                #collect data
 #                distance = tof.get_distance() - start_pos #tof data point
-#                handle = readHandle()#pseudoHandle() #fsr's data point
-#                print("{} --- {} --- {}".format(distance, handle, time()))
+#                #handle = readHandle()#pseudoHandle() #fsr's data point
+#                print("{} --- {}".format(distance, time()))
 #        except KeyboardInterrupt:
 #            pass
-#        #reset drawer
+        #reset drawer
 #        resetFriction(fric_num_steps)
 #        tof.stop_ranging()
-#        resetDrawer(start_pos, tof_mode, tof)
-#    #cleanup GPIO pins
-#    gpio.cleanup()
+        #resetDrawer(start_pos, tof_mode, tof)
+    #cleanup GPIO pins
+    #gpio.cleanup()
 #    return
 #
 #if __name__ == "__main__":
