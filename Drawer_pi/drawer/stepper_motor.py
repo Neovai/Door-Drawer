@@ -176,7 +176,7 @@ class StepperMotor:
       gpio.output(self.en_pin, gpio.HIGH)
     except Exception as e:
       print("Motor pins not configured properly. Error: {}".format(e))
-      print
+      return
     except:
       print("Unknown error during controlling motor pins")
       return
