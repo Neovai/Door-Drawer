@@ -1,4 +1,4 @@
-//this version of the code is used for testing the Door with the Arduino Serial Monitor. Thus, the UI is through the serial monitor
+//this version of the code is used for testing the Door with the Arduino Serial Monitor.
 
 // Include the necessary libraries
 #include "math.h" //Includes math library
@@ -33,17 +33,18 @@
 #define fsr_12 A11 
 
 //define slave signal pin for as5047p
-//#define slave_port 9
+#define slave_port 9
 
 //defines custom spi bus speed for as5047p (Hz). Max is 10000000Hz (10MHz)
-//#define bus_speed 100000 //1MHz
+#define bus_speed 100000 //1MHz
 
 //tof sensor object
-Adafruit_VL53L0X tof = Adafruit_VL53L0X();
+//Adafruit_VL53L0X tof = Adafruit_VL53L0X();
 
-/*AS5047P sensor object
-AS5047P as5047p(slave_port, bus_speed);*/
+//AS5047P sensor object
+AS5047P as5047p(slave_port, bus_speed);
 float door_angle;
+float start_pos;
 
 // Initialize user input variables
 float magnet_input;
@@ -57,22 +58,22 @@ const int time_unwind = 2000; // in ms
 
 void setup() {
   // Initialize the Serial monitor
-  Wire.begin();
+  //Wire.begin();
   Serial.begin(115200);
   while (!Serial) {
     ;
   }
-  //don't run door if TOF is not working
+  /*//don't run door if TOF is not working
   if (!tof.begin()) {
     Serial.println(F("Failed to boot VL53L0X"));
     while (1);
-  }
-  /*if (!as5047p.initSPI()){
+  }*/
+  if (!as5047p.initSPI()){
     Serial.println("as5047p (magnetic potentiometer) failed to connect");
     while (!as5047p.initSPI()){
       ;
     }
-  }*/
+  }
   // initialize motor pins as outputs
   pinMode(motor_channel3, OUTPUT);
   pinMode(motor_channel4, OUTPUT);
@@ -106,13 +107,17 @@ void loop() {
   Enable_Relays(magnet_input); // changes electromagnets based on input
   bool switched_off = false;
   bool switched_on = true;
+  start_pos = as5047p.readAngleDegree();
   time = millis();
   stoptime = time + (time_input * 1000); // converts time_input to seconds
   while (time < stoptime) {
-    read_TOF_val();
-    //read_angle();
+    //read_TOF_val();
+    read_angle();
+    Serial.print(" -- ");
     read_handle_val();
+    Serial.print(" -- ");
     read_pull_force();
+    Serial.print(" -- ");
     time = millis();
     Serial.println(time);
   }
@@ -127,12 +132,12 @@ void Reset_Door() {
   digitalWrite(motor_channel3, LOW);// turns motor
   digitalWrite(motor_channel4, HIGH); // counter clockwise
   while (true) { // door is open more than 5 degrees
-    VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
+    /*VL53L0X_RangingMeasurementData_t measure; //value from tof sensor
     tof.rangingTest(&measure, false);
-    door_angle = calc_degree(measure.RangeMilliMeter);
-    //door_angle = as5047p.readAngleDegree();
+    door_angle = calc_degree(measure.RangeMilliMeter);*/
+    door_angle = start_pos - as5047p.readAngleDegree();
     Serial.print("Angle of the door during closing: "); Serial.println(door_angle);
-    if (door_angle < 1) {
+    if (door_angle < 3) {
       break;
     }
     did_move = true;
@@ -238,34 +243,35 @@ void get_trial_length() {
 }
 
 void read_handle_val() {
-  Serial.println(analogRead(fsr_1));
-  Serial.println(analogRead(fsr_2));
-  Serial.println(analogRead(fsr_3));
-  Serial.println(analogRead(fsr_4));
-  Serial.println(analogRead(fsr_5));
-  Serial.println(analogRead(fsr_6));
-  Serial.println(analogRead(fsr_7));
-  Serial.println(analogRead(fsr_8));
-  Serial.println(analogRead(fsr_9));
-  Serial.println(analogRead(fsr_10));
-  Serial.println(analogRead(fsr_11));
-  Serial.println(analogRead(fsr_12));
+  Serial.print(analogRead(fsr_1));
+  Serial.print(analogRead(fsr_2));
+  Serial.print(analogRead(fsr_3));
+  Serial.print(analogRead(fsr_4));
+  Serial.print(analogRead(fsr_5));
+  Serial.print(analogRead(fsr_6));
+  Serial.print(analogRead(fsr_7));
+  Serial.print(analogRead(fsr_8));
+  Serial.print(analogRead(fsr_9));
+  Serial.print(analogRead(fsr_10));
+  Serial.print(analogRead(fsr_11));
+  Serial.print(analogRead(fsr_12));
 }
 
 void read_pull_force() {
-  Serial.println(analogRead(fsr_13));
-  Serial.println(analogRead(fsr_14));
+  Serial.print(analogRead(fsr_13));
+  Serial.print(analogRead(fsr_14));
 }
 
-/*void read_angle() {
+void read_angle() {
+  //0deg is greatest value in our case
+  door_angle = start_pos - as5047p.readAngleDegree();
   if (door_angle < 0) {
     door_angle = 0;
   }
-  door_angle = as5047p.readAngleDegree();
-  Serial.println(door_angle);
-}*/
+  Serial.print(door_angle);
+}
 
-void read_TOF_val() {
+/*void read_TOF_val() {
   VL53L0X_RangingMeasurementData_t measure; //value from tof sensor. pointer
   tof.rangingTest(&measure, false);
   door_angle = calc_degree(measure.RangeMilliMeter);
@@ -274,12 +280,4 @@ void read_TOF_val() {
   }
   Serial.println(door_angle);
   //Serial.print("Distance (mm): "); Serial.println(measure.RangeMilliMeter); //used for calibrating tof sensor
-}
-
-/* For partial disk
-void read_angle() {
-  Wire.requestFrom(2, 1); //2 is i2c address of slave, 1 is # of bytes requested
-  angle = Wire.read(); //reads one byte sent over (only asking for one)
-  Serial.println(angle);
-}
-*/
+}*/
