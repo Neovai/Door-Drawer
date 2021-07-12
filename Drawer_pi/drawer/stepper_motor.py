@@ -3,6 +3,8 @@ from time import time, sleep
 import RPi.GPIO as gpio
 import numpy as np
 
+# Author: Ryan Roberts
+#
 #TODO:
 # add resolution parameter (pulse/rev) to do movements given angles
 
@@ -40,6 +42,12 @@ class StepperMotor:
     steps motor to a specific step relative to its zero positon
   get_current_steps():
     returns current step position of motor
+  override_position(step_value):
+    overrides the current step value of motor.
+  override_enable():
+    force enable motor
+  override_disable():
+    force disables motor
   """
   
   CCW = 1
@@ -57,8 +65,6 @@ class StepperMotor:
       GPIO pin number for direction pin of stepper motor controller
     en_pin : int
       GPIO pin number for enable pin of stepper motor controller
-    resolution : int
-      pulse/rev value of motor
     default_speed : float, optional
       delay between pulses in seconds / 2 (default .000001)
     """
@@ -268,7 +274,7 @@ class StepperMotor:
   
   def override_position(self, step_value):
     """
-    ovverides the current step value of motor.
+    overides the current step value of motor.
     NOTE: motor does not move to new step value. Use
     the step_to() method to move motor to a absolute step
     position.
@@ -329,6 +335,4 @@ class StepperMotor:
     except Exception as e:
       print("Motor pins not configured properly. Error: {}".format(e))
     except:
-      print("Unknown error during enabling motor")
-    
-    
+      print("Unknown error during disabling motor")

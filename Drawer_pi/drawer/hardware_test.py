@@ -14,15 +14,13 @@ if __name__ == "__main__":
     trial_time = int(raw_input("Trial Time (seconds, -1 to quit): "))
     if(trial_time == -1):
       break
-    tof_mode = int(raw_input("TOF mode (0 - 4): "))
+    tof_mode = int(raw_input("ToF mode (0 - 4): "))
     resistance = float(raw_input("Friction Resistance (kg): "))
+
     drawer.start_new_trial(resistance, tof_mode)
     timer = time() + trial_time
     while(time() <= timer):
-      drawer.collect_data()
+      data_point = drawer.collect_data()
+      print("ToF: {} -- FSR's: {} -- Time: {}".format(data_point.tof, data_point.handle_data, time()))
     drawer.reset()
-    trial_data = drawer.get_trial_data()
-    for i in range(0, len(trial_data)):
-      print(trial_data[i].handle_data)
-    print("Length of trial: {}".format(len(trial_data)))
   del drawer
