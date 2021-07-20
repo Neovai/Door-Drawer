@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 #
 # Author: Ryan Roberts
+#
+# General class for interfacing with the AS5047P rotary sensor.
+# Currently only has read functionalities for each register.
+# 
+# TODO:
+# add write capabilities for non-volatile registers (PROG)
 
 import spidev
 from time import sleep
@@ -59,7 +65,6 @@ class AS5047P:
             self.get_error()
         return res
         
-    
     def print_latest_err_msg(self):
         print("Raw Error Message: {}".format(self.latest_err_msg))
         print("Meaning:")
