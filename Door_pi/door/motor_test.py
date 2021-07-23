@@ -8,9 +8,9 @@ from time import sleep, time
 
 if __name__ == "__main__":
     # 25 or 20 are good duty cycles
-    in3 = 12
-    in4 = 26
-    enB = 13
+    in3 = 4
+    in4 = 5
+    enB = 12
     freq = 100
     duty_cycle = float(sys.argv[1])
     gpio.setmode(gpio.BCM)

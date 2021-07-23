@@ -22,9 +22,9 @@ class Door:
         self.upper_adc.open(1, 0)
         self.upper_adc.max_speed_hz = 1000000
         #mc pins for reset motor
-        self.in3 = 12
-        self.in4 = 26
-        self.enB = 13
+        self.in3 = 4 #was 12
+        self.in4 = 5 #was 26
+        self.enB = 12 #was 13
         self.reset_freq = 100
         self.time_unwind = 2 #seconds
         self.reset_dc = 20 #speed of motor
