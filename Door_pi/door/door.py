@@ -28,20 +28,32 @@ class Door:
         self.reset_freq = 100
         self.time_unwind = 2 #seconds
         self.reset_dc = 20 #speed of motor
-        self.dis_buffer = 1 #buffer value for resetting drawer (in deg)
-      
+        self.dis_buffer = 3 #buffer value for resetting drawer (in deg)
+        #magnet controller
+        self.magnet_freq = 200 #not finalized
+        self.magnet_dc = 0 #to initialize magnets off
+        self.magnet_pin = 13
+
         gpio.setmode(gpio.BCM)
+        gpio.setup(self.magnet_pin, gpio.OUT)
         gpio.setup(self.in3, gpio.OUT)
         gpio.setup(self.in4, gpio.OUT)
         gpio.setup(self.enB, gpio.OUT)
         gpio.output(self.in3, 0)
         gpio.output(self.in4, 0)
         self.reset_pwm = gpio.PWM(self.enB, self.reset_freq)
+        self.magnet_pwm = gpio.PWM(self.magnet_pin, self.magnet_freq)
+        self.magnet_pwm.start(self.magnet_dc)
     
     def __set_friction(self):
+        #add newton conversion to dc here
+        self.magnet_dc = self.__resistance_value
+        self.magnet_pwm.ChangeDutyCycle(self.magnet_dc)
         print("set resistance to {}".format(self.__resistance_value))
    
     def __reset_friction(self):
+        self.magnet_dc = 0
+        self.magnet_pwm.ChangeDutyCycle(self.magnet_dc)
         print("set resistance to 0")
         
     def __read_handle(self):
@@ -58,7 +70,7 @@ class Door:
         return data
   
     def start_new_trial(self, resistance):
-        self.__resistance_value = resistance #do calculations to know dc for pwm pin
+        self.__resistance_value = resistance
         self.start_pos = self.angle_sensor.get_angle()
         self.__set_friction()
    
